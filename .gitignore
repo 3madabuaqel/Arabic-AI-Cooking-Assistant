@@ -39,3 +39,17 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+
+back-end/model/
+back-end/data/
+back-end/model/chroma_db/
+
+*.sqlite3
+*.bin
+
+# Python cache
+__pycache__/
+*.pyc
+venv/
+.env
