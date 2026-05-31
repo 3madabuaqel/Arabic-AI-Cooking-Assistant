@@ -688,41 +688,46 @@ const handlePickImage = async (useCamera = false) => {
           <Text style={styles.logoutLabel}>Log Out</Text>
           <LogOut color="#D32F2F" size={18} />
         </TouchableOpacity>
-        <Text style={[styles.sectionTitle, isDark && {color: '#888'}]}>
-          {t ? 'المظهر' : 'Appearance'}
-        </Text>
-        
-        <View style={[styles.themeContainer, isDark && {backgroundColor: '#1E1E1E'}]}>
-          {/* خيار: فاتح */}
-          <TouchableOpacity 
-            style={[styles.themeOption, themeMode === 'light' && styles.activeTheme]} 
-            onPress={() => changeTheme('light')}
-          >
-            <Text style={[styles.themeText, isDark && {color: '#fff'}, themeMode === 'light' && {color: '#2D8C46'}]}>
-              {t ? 'فاتح' : 'Light'}
-            </Text>
-          </TouchableOpacity>
+        <View style={[
+  styles.themeCard,
+  isDark && { backgroundColor: '#1E1E1E' }
+]}>
+  <View style={styles.themeLeft}>
+    <View style={[
+      styles.themeIcon,
+      { backgroundColor: isDark ? '#2D2D2D' : '#F3F4F6' }
+    ]}>
+      <Moon
+        size={22}
+        color={isDark ? '#FFD54F' : '#555'}
+      />
+    </View>
 
-          {/* خيار: داكن */}
-          <TouchableOpacity 
-            style={[styles.themeOption, themeMode === 'dark' && styles.activeTheme]} 
-            onPress={() => changeTheme('dark')}
-          >
-            <Text style={[styles.themeText, isDark && {color: '#fff'}, themeMode === 'dark' && {color: '#2D8C46'}]}>
-              {t ? 'داكن' : 'Dark'}
-            </Text>
-          </TouchableOpacity>
+    <View>
+      <Text style={[
+        styles.themeTitle,
+        isDark && { color: '#fff' }
+      ]}>
+        {t ? 'الوضع الداكن' : 'Dark Mode'}
+      </Text>
 
-          {/* خيار: حسب النظام */}
-          <TouchableOpacity 
-            style={[styles.themeOption, themeMode === 'system' && styles.activeTheme]} 
-            onPress={() => changeTheme('system')}
-          >
-            <Text style={[styles.themeText, isDark && {color: '#fff'}, themeMode === 'system' && {color: '#2D8C46'}]}>
-              {t ? 'تلقائي' : 'System'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+      <Text style={styles.themeSubtitle}>
+        {t ? 'تغيير مظهر التطبيق' : 'Change app appearance'}
+      </Text>
+    </View>
+  </View>
+
+  <Switch
+    value={isDark}
+    onValueChange={(value) =>
+      changeTheme(value ? 'dark' : 'light')
+    }
+    trackColor={{
+      false: '#D1D5DB',
+      true: '#2D8C46'
+    }}
+  />
+</View>
       </ScrollView>
     </SafeAreaView>
   );
