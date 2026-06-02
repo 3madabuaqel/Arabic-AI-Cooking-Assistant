@@ -403,12 +403,15 @@ const VerifyScreen = ({ navigation }) => (
   </SafeAreaView>
 );
 
-// --- 5. شاشة الدردشة (Chat Screen) - تم تفعيل الأزرار هنا ---
+
+const API_BASE_URL = 'http://192.168.100.28:8000';
+
 const ChatScreen = ({ navigation }) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim()) return;
 
     const userMessage = {
@@ -417,44 +420,29 @@ const ChatScreen = ({ navigation }) => {
       sender: 'user',
     };
 
-    setMessages([userMessage]);
-
+    // إضافة رسالة المستخدم للمحادثة بدون مسح الرسائل القديمة
+    setMessages(prev => [...prev, userMessage]);
     setInput('');
+    setIsLoading(true);
 
-    setTimeout(() => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/search?query=${encodeURIComponent(input)}&mode=overview`);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      const data = await response.json();
+      
       let reply = '';
-
-      // عربي
-      if (
-        input.includes('مرحبا') ||
-        input.includes('اهلا') ||
-         input.includes('كيفك') ||
-          input.includes('ساعدني') ||
-           input.includes('السلام عليكم') ||
-        input.includes('هاي')
-      ) {
-        reply =
-          'اهلا 👋 انا مساعدك الذكي، شو المكونات يلي عندك؟';
+      if (data && data.length > 0) {
+        reply = "هذه بعض الوصفات التي وجدتها لك:\n\n";
+        data.forEach((recipe, idx) => {
+          reply += `${idx + 1}. ${recipe.title}\n`;
+        });
+      } else {
+        reply = "عذراً، لم أجد وصفات تطابق طلبك. هل لديك مكونات أخرى؟";
       }
 
-      // انجليزي
-      else if (
-        input.toLowerCase().includes('hello') ||
-        input.toLowerCase().includes('how are you') ||
-        input.toLowerCase().includes('hi')
-      ) {
-        reply =
-          'Hello 👋 I am your smart cooking assistant. What ingredients do you have?';
-      }
-
-      else {
-        reply =
-          'شو بدك تطبخ اليوم؟ 👨‍🍳';
-          reply =
-          'امممممممممم شو عندك مكونات اساعدك يغالي؟';
-      }
-
-      setMessages((prev) => [
+      setMessages(prev => [
         ...prev,
         {
           id: Date.now() + 1,
@@ -462,9 +450,22 @@ const ChatScreen = ({ navigation }) => {
           sender: 'bot',
         },
       ]);
-    }, 700);
+    } catch (error) {
+      console.error("Fetch Error: ", error);
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          text: "حدث خطأ أثناء الاتصال بالخادم. يرجى التأكد من تشغيل السيرفر.",
+          sender: 'bot',
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
+  
   return (
     <SafeAreaView style={styles.container}>
 
