@@ -426,18 +426,15 @@ const ChatScreen = ({ navigation }) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/search?query=${encodeURIComponent(input)}&mode=overview`);
+      const response = await fetch(`${API_BASE_URL}/search_and_guide?query=${encodeURIComponent(input)}`);
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
       const data = await response.json();
       
       let reply = '';
-      if (data && data.length > 0) {
-        reply = "هذه بعض الوصفات التي وجدتها لك:\n\n";
-        data.forEach((recipe, idx) => {
-          reply += `${idx + 1}. ${recipe.title}\n`;
-        });
+      if (data && data.guide_text) {
+        reply = data.guide_text;
       } else {
         reply = "عذراً، لم أجد وصفات تطابق طلبك. هل لديك مكونات أخرى؟";
       }
@@ -464,6 +461,7 @@ const ChatScreen = ({ navigation }) => {
       setIsLoading(false);
     }
   };
+
 
   
   return (
