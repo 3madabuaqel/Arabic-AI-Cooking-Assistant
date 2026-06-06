@@ -1,68 +1,94 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-
-// Import screens (ensure your paths are correct)
-import ChatScreen from './screens/ChatScreen.js';
-import LoginScreen from './screens/LoginScreen.js';
-import SettingsScreen from './screens/SettingsScreen.js';
-import AccountInfoScreen from './screens/AccountInfoScreen.js';
-import SignUpScreen from './screens/SignUpScreen.js';
-import ForgotPassScreen from './screens/ForgotPassword.js';
-import VerifyScreen from './screens/VerifyScreen.js';
-import WelcomeScreen from './screens/WelcomeScreen.js';
-import RecipeDetailScreen from './screens/RecipeDetailScreen.js';
-import FavoritesScreen from './screens/FavoritesScreen.js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import auth from '@react-native-firebase/auth';
+// استيراد الشاشات
+import ChatScreen from './screens/ChatScreen';
+import LoginScreen from './screens/LoginScreen';
+import SettingsScreen from './screens/SettingsScreen';
+import AccountInfoScreen from './screens/AccountInfoScreen';
+import SignUpScreen from './screens/SignUpScreen';
+import ForgotPassScreen from './screens/ForgotPassScreen';
+import VerifyScreen from './screens/VerifyScreen';
+import FavoritesScreen from './screens/FavoritesScreen';
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
-  const [lang, setLang] = useState('en'); // 'en' or 'ar'
-  const [themeMode, setThemeMode] = useState('light'); // 'light' or 'dark'
-  const [favorites, setFavorites] = useState([]); // State for the favorites list
-  const [user, setUser] = useState({ 
-    isLoggedIn: false, 
-    name: 'Sara', 
-    password: '123',
-    profileImage: null 
+  const [lang, setLang] = useState('en');
+  const [themeMode, setThemeMode] = useState('light');
+  const [favorites, setFavorites] = useState([]);
+ const [user, setUser] = useState({
+  isLoggedIn: false,
+  name: 'Sara',
+  password: '123',
+  phone: '',
+  countryCode: '+962',
+  profileImage: null,
+});
+
+const isDark = themeMode === 'dark';
+
+// في ملف App.js
+useEffect(() => {
+  const unsubscribe = auth().onAuthStateChanged((firebaseUser) => {
+    if (firebaseUser) {
+      // المستخدم مسجل دخول بالفعل في Firebase
+      setUser(prev => ({ ...prev, isLoggedIn: true, name: firebaseUser.email }));
+    } else {
+      // لا يوجد مستخدم
+      setUser(prev => ({ ...prev, isLoggedIn: false }));
+    }
   });
 
-  const isDark = themeMode === 'dark';
+  return unsubscribe; 
+}, []);
+const saveUserData = async () => {
+  try {
+    await AsyncStorage.setItem(
+      'userData',
+      JSON.stringify(user)
+    );
+  } catch (error) {
+    console.log('Error saving user data:', error);
+  }
+};
+const loadUserData = async () => {
+  try {
+    const savedUser = await AsyncStorage.getItem('userData');
+
+    if (savedUser) {
+      setUser(prev => ({
+        ...prev,
+        ...JSON.parse(savedUser),
+      }));
+    }
+  } catch (error) {
+    console.log('Error loading user data:', error);
+  }
+};
 
   return (
     <SafeAreaProvider>
       <NavigationContainer>
         <Stack.Navigator
-          screenOptions={{ headerShown: false }}
-          initialRouteName="Welcome"
-        >
-          
-          {/* Welcome Screen */}
-          <Stack.Screen name="Welcome">
-            {(props) => (
-              <WelcomeScreen
-                {...props}
-                setUser={setUser}
-              />
-            )}
-          </Stack.Screen>
-          
-          {/* Chat Screen - passing all props to enable Dark mode and Language */}
+         screenOptions={{ headerShown: false }}
+  initialRouteName={user.isLoggedIn ? "Chat" : "Login"}
+>
+          {/* شاشة الشات */}
           <Stack.Screen name="Chat">
             {(props) => (
               <ChatScreen
                 {...props}
                 lang={lang}
                 isDark={isDark}
-                favorites={favorites}
-                setFavorites={setFavorites}
-                user={user}
               />
             )}
           </Stack.Screen>
 
-          {}
+          {/* شاشة تسجيل الدخول */}
           <Stack.Screen name="Login">
             {(props) => (
               <LoginScreen
@@ -75,7 +101,7 @@ export default function App() {
             )}
           </Stack.Screen>
 
-          {/* Settings Screen */}
+          {/* شاشة الإعدادات */}
           <Stack.Screen name="Settings">
             {(props) => (
               <SettingsScreen
@@ -91,7 +117,7 @@ export default function App() {
             )}
           </Stack.Screen>
 
-          {/* Account Info Screen */}
+          {/* شاشة معلومات الحساب */}
           <Stack.Screen name="AccountInfo">
             {(props) => (
               <AccountInfoScreen
@@ -104,7 +130,7 @@ export default function App() {
             )}
           </Stack.Screen>
 
-          {/* Sign Up Screen */}
+          {/* شاشة إنشاء حساب */}
           <Stack.Screen name="SignUp">
             {(props) => (
               <SignUpScreen
@@ -116,7 +142,7 @@ export default function App() {
             )}
           </Stack.Screen>
 
-          {/* Forgot Password Screen */}
+          {/* شاشة نسيت كلمة المرور */}
           <Stack.Screen name="ForgotPass">
             {(props) => (
               <ForgotPassScreen
@@ -127,7 +153,7 @@ export default function App() {
             )}
           </Stack.Screen>
 
-          {/* Verify Code Screen */}
+          {/* شاشة التحقق */}
           <Stack.Screen name="Verify">
             {(props) => (
               <VerifyScreen
@@ -138,7 +164,7 @@ export default function App() {
             )}
           </Stack.Screen>
 
-          {/* Favorites Screen - linked to the app's actual State */}
+          {/* شاشة المفضلة */}
           <Stack.Screen name="Favorites">
             {(props) => (
               <FavoritesScreen
@@ -150,18 +176,6 @@ export default function App() {
               />
             )}
           </Stack.Screen>
-
-          {/* Recipe Detail Screen */}
-          <Stack.Screen name="RecipeDetail">
-            {(props) => (
-              <RecipeDetailScreen
-                {...props}
-                lang={lang}
-                isDark={isDark}
-              />
-            )}
-          </Stack.Screen>
-
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

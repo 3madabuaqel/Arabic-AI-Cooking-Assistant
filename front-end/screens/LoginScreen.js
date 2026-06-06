@@ -1,56 +1,85 @@
 import React, { useState } from 'react';
+import auth from '@react-native-firebase/auth';
 import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  StyleSheet, 
-  SafeAreaView, 
-  ScrollView, 
-  Image, 
-  Alert 
+  View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Image, Alert 
 } from 'react-native';
-import { ArrowLeft, ChefHat, Eye } from 'lucide-react-native';
-
+import { ArrowLeft, Utensils, Eye } from 'lucide-react-native';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 export default function LoginScreen({ navigation, setUser, lang, isDark, user }) {
   const t = lang === 'ar';
   const [showPass, setShowPass] = useState(false);
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
-  // Your original login function
-  const handleLogin = (method) => {
-    setUser({ ...user, isLoggedIn: true, name: 'Sara', password: user.password || '123456' });
-    Alert.alert(t ? "نجاح" : "Success", `${t ? "تم الدخول عبر" : "Logged in via"} ${method}`);
-    navigation.replace('Chat');  
+GoogleSignin.configure({
+  webClientId: 'ضعي هنا Web Client ID من Firebase',
+});
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("خطأ", "يرجى تعبئة البريد وكلمة المرور");
+      return;
+    }
+    try {
+      const userCredential = await auth().signInWithEmailAndPassword(email.trim(), password);
+      setUser({ ...user, isLoggedIn: true, name: userCredential.user.email });
+      navigation.replace('Chat');
+    } catch (error) {
+      Alert.alert("خطأ", error.message);
+    }
   };
+const signInWithGoogle = async () => {
+  try {
+    await GoogleSignin.hasPlayServices();
 
+    const userInfo = await GoogleSignin.signIn();
+
+    const idToken = userInfo.data?.idToken || userInfo.idToken;
+
+    const googleCredential =
+      auth.GoogleAuthProvider.credential(idToken);
+
+    const userCredential =
+      await auth().signInWithCredential(googleCredential);
+
+    setUser({
+      ...user,
+      isLoggedIn: true,
+      name:
+        userCredential.user.displayName ||
+        userCredential.user.email,
+    });
+
+    navigation.replace('Chat');
+
+  } catch (error) {
+    Alert.alert('Google Login Error', error.message);
+  }
+};
   return (
     <SafeAreaView style={[styles.container, isDark && { backgroundColor: '#121212' }]}>
       <ScrollView contentContainerStyle={styles.centerContent}>
         
-        {/* Back button */}
         <TouchableOpacity style={styles.backBtnAction} onPress={() => navigation.goBack()}>
           <ArrowLeft color={isDark ? '#fff' : '#000'} size={24} />
         </TouchableOpacity>
 
-        {/* Green box with icon */}
         <View style={styles.greenIconBox}>
-          <ChefHat color="white" size={32} />
+          <Utensils color="white" size={32} />
         </View>
 
-        {/* Welcome texts */}
         <View style={styles.textWrapper}>
           <Text style={[styles.titleText, isDark && { color: '#fff' }]}>Welcome Back</Text>
           <Text style={[styles.subtitleText, isDark && { color: '#aaa' }]}>Log in to continue</Text>
         </View>
 
-        {/* Input fields */}
         <View style={styles.formContainer}>
           <Text style={[styles.label, isDark && { color: '#ccc' }]}>Email</Text>
           <TextInput 
             style={[styles.input, isDark && styles.darkInput]} 
             placeholder="your@email.com" 
             placeholderTextColor={isDark ? '#777' : '#999'}
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
           />
 
           <Text style={[styles.label, { marginTop: 20 }, isDark && { color: '#ccc' }]}>Password</Text>
@@ -68,45 +97,27 @@ export default function LoginScreen({ navigation, setUser, lang, isDark, user })
             </TouchableOpacity>
           </View>
 
-          {/* Forgot password button */}
-          <TouchableOpacity 
-            style={styles.forgotBtn} 
-            onPress={() => {
-              console.log("Navigating to ForgotPass..."); 
-              navigation.navigate('ForgotPass');
-            }}
-          >
+          <TouchableOpacity style={styles.forgotBtn} onPress={() => navigation.navigate('ForgotPass')}>
             <Text style={styles.greenBold}>Forgot Password?</Text>
           </TouchableOpacity>
 
-          {/* Main login button */}
-          <TouchableOpacity
-            style={styles.primaryBtn}
-            onPress={() => {
-              if (!password) {
-                Alert.alert("Error", "Enter password");
-                return;
-              }
-              // Call the login function you wrote and pass the method "Email"
-              handleLogin('Email');
-            }}
-          >
+          <TouchableOpacity style={styles.primaryBtn} onPress={handleLogin}>
             <Text style={styles.primaryBtnText}>Login</Text>
           </TouchableOpacity>
         </View>
 
-        {/* OR divider */}
+        {/* الفاصل OR */}
         <View style={styles.orDivider}>
           <View style={[styles.line, isDark && { backgroundColor: '#333' }]} />
           <Text style={[styles.orText, isDark && { color: '#777' }]}>OR</Text>
           <View style={[styles.line, isDark && { backgroundColor: '#333' }]} />
         </View>
 
-        {/* Google button */}
-        <TouchableOpacity 
-          style={[styles.googleBtn, isDark && { borderColor: '#333' }]}   
-          onPress={() => handleLogin('Google')}
-        >
+        {/* زر جوجل */}
+     <TouchableOpacity
+  style={[styles.googleBtn, isDark && { borderColor: '#333' }]}
+  onPress={signInWithGoogle}
+>      
           <Image 
             source={{ uri: 'https://cdn-icons-png.flaticon.com/512/2991/2991148.png' }} 
             style={styles.googleIcon} 
@@ -114,7 +125,7 @@ export default function LoginScreen({ navigation, setUser, lang, isDark, user })
           <Text style={[styles.googleBtnText, isDark && { color: '#fff' }]}>Continue with Google</Text>
         </TouchableOpacity>
 
-        {/* Bottom of the screen to create a new account */}
+        {/* أسفل الشاشة لإنشاء حساب جديد */}
         <View style={styles.footerRow}>
           <Text style={{ color: isDark ? '#aaa' : '#000' }}>Don't have an account? </Text>
           <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>

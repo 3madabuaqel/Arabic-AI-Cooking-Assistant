@@ -1,91 +1,91 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  SafeAreaView, 
-  ScrollView 
+  View, Text, TextInput, TouchableOpacity, SafeAreaView, ScrollView, Alert, ActivityIndicator, StyleSheet 
 } from 'react-native';
 import { ArrowLeft, LockKeyhole } from 'lucide-react-native';
+import auth from '@react-native-firebase/auth';
 
 export default function ForgotPassScreen({ navigation, lang, isDark }) {
   const t = lang === 'ar';
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSendCode = async () => {
+    if (!email) {
+      Alert.alert("Error", "Please enter your email address");
+      return;
+    }
+    setLoading(true);
+    try {
+      await auth().sendPasswordResetEmail(email.trim());
+      Alert.alert("Success", "Check your email for the reset link");
+      navigation.navigate('Verify', { email });
+    } catch (error) {
+      Alert.alert("Error", error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? '#121212' : '#F5F7F6' }}>
-      {/* ScrollView with style to center everything */}
-      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+    <SafeAreaView style={[styles.container, isDark && { backgroundColor: '#121212' }]}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
         
-        {/* White container (Card) - creates the desired shape */}
-        <View style={{
-          backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-          width: '100%',
-          maxWidth: 400, // This line prevents items from spreading horizontally in the browser
-          borderRadius: 35, // Large rounded borders like the image
-          padding: 30,
-          elevation: 10,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 10 },
-          shadowOpacity: 0.1,
-          shadowRadius: 20,
-        }}>
-
-          {/* Back button */}
-          <TouchableOpacity 
-            style={{ alignSelf: 'flex-start', marginBottom: 20 }} 
-            onPress={() => navigation.goBack()}
-          >
-            <View style={{ width: 45, height: 45, borderRadius: 22.5, backgroundColor: isDark ? '#2D3A30' : '#EBF4ED', justifyContent: 'center', alignItems: 'center' }}>
-              <ArrowLeft color="#2D8C46" size={24} />
-            </View>
+        {/* البطاقة المركزية */}
+        <View style={[styles.card, isDark && { backgroundColor: '#1E1E1E' }]}>
+          
+          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+            <ArrowLeft color={isDark ? '#fff' : '#000'} size={24} />
           </TouchableOpacity>
 
-          {/* Central icon (Light green square) */}
-          <View style={{ alignSelf: 'center', width: 80, height: 80, backgroundColor: isDark ? '#1C3524' : '#E1F0E6', borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginBottom: 20 }}>
-             <LockKeyhole color="#2D8C46" size={35} />
+          {/* أيقونة القفل */}
+          <View style={[styles.iconBox, isDark && { backgroundColor: '#1C3524' }]}>
+            <LockKeyhole color="#2D8C46" size={35} />
           </View>
 
-          {/* Title */}
-          <Text style={{ fontSize: 28, fontWeight: '800', color: isDark ? '#fff' : '#1A1A1A', textAlign: 'center', marginBottom: 35 }}>
-            {t ? 'نسيت كلمة السر' : 'Forgot Password'}
-          </Text>
+          <Text style={[styles.title, isDark && { color: '#fff' }]}>Forgot Password</Text>
 
-          {/* Email field and send button */}
-          <View style={{ width: '100%' }}>
-            <Text style={{ fontSize: 11, fontWeight: '700', color: isDark ? '#ccc' : '#333', marginBottom: 8, letterSpacing: 1 }}>
-              {t ? 'عنوان البريد الإلكتروني' : 'EMAIL ADDRESS'}
-            </Text>
-            <TextInput 
-              style={{ backgroundColor: isDark ? '#333' : '#F3F4F6', height: 55, borderRadius: 20, paddingHorizontal: 20, color: isDark ? '#fff' : '#000', marginBottom: 25 }} 
-              placeholder="your@email.com" 
-              placeholderTextColor={isDark ? '#777' : '#BBB'} 
-            />
+          {/* حقل الإيميل */}
+          <Text style={[styles.label, isDark && { color: '#ccc' }]}>EMAIL ADDRESS</Text>
+          <TextInput 
+            style={[styles.input, isDark && { backgroundColor: '#333', color: '#fff' }]} 
+            placeholder="your@email.com" 
+            placeholderTextColor={isDark ? '#777' : '#BBB'}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            value={email}
+            onChangeText={setEmail}
+          />
 
-            <TouchableOpacity 
-              style={{ backgroundColor: '#2D8C46', height: 55, borderRadius: 30, justifyContent: 'center', alignItems: 'center' }}
-              onPress={() => navigation.navigate('Verify')}
-            >
-              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>
-                {t ? 'إرسال الكود' : 'Send code'}
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={styles.primaryBtn} onPress={handleSendCode} disabled={loading}>
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Send code</Text>}
+          </TouchableOpacity>
 
-          {/* Bottom link to return to login */}
-          <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 30 }}>
-            <Text style={{ color: isDark ? '#aaa' : '#666', fontSize: 14 }}>
-              {t ? 'تذكرت كلمة السر؟ ' : 'Remember your password? '}
-            </Text>
+          <View style={styles.footerRow}>
+            <Text style={[styles.footerText, isDark && { color: '#aaa' }]}>Remember your password? </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-              <Text style={{ color: '#2D8C46', fontWeight: 'bold', fontSize: 14 }}>
-                {t ? 'تسجيل الدخول' : 'Log In'}
-              </Text>
+              <Text style={styles.linkText}>Log In</Text>
             </TouchableOpacity>
           </View>
-
         </View>
+
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#F5F7F6' },
+  scrollContent: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  card: { backgroundColor: '#FFFFFF', width: '100%', maxWidth: 400, borderRadius: 35, padding: 30, alignItems: 'center' },
+  backBtn: { alignSelf: 'flex-start', marginBottom: 20 },
+  iconBox: { width: 80, height: 80, backgroundColor: '#E1F0E6', borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
+  title: { fontSize: 28, fontWeight: '800', color: '#1A1A1A', marginBottom: 35 },
+  label: { fontSize: 11, fontWeight: '700', color: '#333', marginBottom: 8, letterSpacing: 1, alignSelf: 'flex-start' },
+  input: { backgroundColor: '#F3F4F6', width: '100%', height: 55, borderRadius: 20, paddingHorizontal: 20, marginBottom: 25 },
+  primaryBtn: { backgroundColor: '#2D8C46', width: '100%', height: 55, borderRadius: 30, justifyContent: 'center', alignItems: 'center' },
+  btnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  footerRow: { flexDirection: 'row', marginTop: 30 },
+  footerText: { color: '#666', fontSize: 14 },
+  linkText: { color: '#2D8C46', fontWeight: 'bold', fontSize: 14 }
+});
