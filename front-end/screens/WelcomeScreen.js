@@ -11,14 +11,20 @@ import {
   Alert,
   SafeAreaView,
 } from 'react-native';
+import { ChefHat } from 'lucide-react-native';
 
-export default function App() {
+export default function WelcomeScreen({ navigation, setUser }) {
+  const handleGuest = () => {
+    setUser({ isLoggedIn: true, isGuest: true, name: 'زائر', profileImage: null });
+    navigation.navigate('Chat');
+  };
+
   const handleLogin = () => {
-    Alert.alert('Login', 'تم الضغط على زر Login');
+    navigation.navigate('Login');
   };
 
   const handleCreateAccount = () => {
-    Alert.alert('Create Account', 'تم الضغط على زر Create Account');
+    navigation.navigate('SignUp');
   };
 
   const handleTerms = () => {
@@ -45,7 +51,7 @@ export default function App() {
 
         {/* Logo */}
         <View style={styles.logoBox}>
-          <Text style={styles.logo}>🍳</Text>
+          <ChefHat color="#2D8C46" size={42} />
         </View>
       </ImageBackground>
 
@@ -70,26 +76,18 @@ export default function App() {
         >
           <Text style={styles.createText}>Create Account</Text>
         </TouchableOpacity>
+
+        {/* Guest Button */}
+        <TouchableOpacity
+          style={[styles.createButton, { marginTop: 15, borderColor: '#ccc' }]}
+          onPress={handleGuest}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.createText, { color: '#666' }]}>Guest Mode</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Footer */}
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>
-          By continuing, you agree to our
-        </Text>
 
-        <View style={styles.linksRow}>
-          <TouchableOpacity onPress={handleTerms}>
-            <Text style={styles.link}>Terms</Text>
-          </TouchableOpacity>
-
-          <Text style={styles.footerText}> and </Text>
-
-          <TouchableOpacity onPress={handlePrivacy}>
-            <Text style={styles.link}>Privacy Policy</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
     </SafeAreaView>
   );
 }
@@ -138,16 +136,17 @@ const styles = StyleSheet.create({
   },
 
   content: {
+    flex: 1,
     alignItems: 'center',
-    marginTop: 40,
+    marginTop: 30,
     paddingHorizontal: 30,
   },
 
   title: {
-    fontSize: 38,
+    fontSize: 32,
     fontWeight: '800',
     color: '#0A5C2F',
-    marginBottom: 70,
+    marginBottom: 40,
   },
 
   loginButton: {
@@ -182,26 +181,5 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  footer: {
-    position: 'absolute',
-    bottom: 35,
-    width: '100%',
-    alignItems: 'center',
-  },
 
-  footerText: {
-    color: '#B0B0B0',
-    fontSize: 15,
-  },
-
-  linksRow: {
-    flexDirection: 'row',
-    marginTop: 5,
-  },
-
-  link: {
-    color: '#0A5C2F',
-    fontSize: 15,
-    fontWeight: '700',
-  },
 });

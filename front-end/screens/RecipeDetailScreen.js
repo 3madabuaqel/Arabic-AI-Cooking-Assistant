@@ -2,32 +2,40 @@ import React from 'react';
 import { View, Text, Image, ScrollView, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
 import { ArrowLeft, Star, Clock, Flame } from 'lucide-react-native';
 
-const RecipeDetailScreen = ({ navigation }) => (
-  <SafeAreaView style={styles.container}>
-    <ScrollView>
-      <Image source={{ uri: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=1000' }} style={styles.mainImg} />
-      <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-        <ArrowLeft color="white" />
-      </TouchableOpacity>
-      
-      <View style={styles.content}>
-        <Text style={styles.recipeName}>Grilled Chicken Salad</Text>
-        <View style={styles.statsRow}>
-          <View style={styles.stat}><Clock size={16} color="#666"/><Text> 20 mins</Text></View>
-          <View style={styles.stat}><Flame size={16} color="#666"/><Text> 350 kcal</Text></View>
-          <View style={styles.stat}><Star size={16} color="#FFB300"/><Text> 4.8</Text></View>
+const RecipeDetailScreen = ({ route, navigation }) => {
+  const recipe = route?.params?.recipe || {
+    title: 'Grilled Chicken Salad',
+    time: '20 mins',
+    img: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=1000'
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView>
+        <Image source={{ uri: recipe.img }} style={styles.mainImg} />
+        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+          <ArrowLeft color="white" />
+        </TouchableOpacity>
+        
+        <View style={styles.content}>
+          <Text style={styles.recipeName}>{recipe.title}</Text>
+          <View style={styles.statsRow}>
+            <View style={styles.stat}><Clock size={16} color="#666"/><Text> {recipe.time}</Text></View>
+            <View style={styles.stat}><Flame size={16} color="#666"/><Text> 350 kcal</Text></View>
+            <View style={styles.stat}><Star size={16} color="#FFB300"/><Text> 4.8</Text></View>
+          </View>
+
+          <Text style={styles.sectionTitle}>Ingredients</Text>
+          <Text style={styles.text}>• 200g Chicken Breast{"\n"}• Fresh Lettuce & Spinach{"\n"}• Cherry Tomatoes{"\n"}• Olive Oil & Lemon</Text>
+
+          <Text style={styles.sectionTitle}>Instructions</Text>
+          <Text style={styles.text}>1. Grill the chicken until golden brown.{"\n"}2. Chop the vegetables and mix in a bowl.{"\n"}3. Add dressing and serve fresh.</Text>
         </View>
-
-        <Text style={styles.sectionTitle}>Ingredients</Text>
-        <Text style={styles.text}>• 200g Chicken Breast{"\n"}• Fresh Lettuce & Spinach{"\n"}• Cherry Tomatoes{"\n"}• Olive Oil & Lemon</Text>
-
-        <Text style={styles.sectionTitle}>Instructions</Text>
-        <Text style={styles.text}>1. Grill the chicken until golden brown.{"\n"}2. Chop the vegetables and mix in a bowl.{"\n"}3. Add dressing and serve fresh.</Text>
-      </View>
-    </ScrollView>
-    <TouchableOpacity style={styles.cookBtn}><Text style={styles.cookBtnText}>Add to Favorites</Text></TouchableOpacity>
-  </SafeAreaView>
-);
+      </ScrollView>
+      <TouchableOpacity style={styles.cookBtn}><Text style={styles.cookBtnText}>Add to Favorites</Text></TouchableOpacity>
+    </SafeAreaView>
+  );
+};
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },

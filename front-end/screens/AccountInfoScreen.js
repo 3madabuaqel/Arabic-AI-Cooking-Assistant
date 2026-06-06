@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { ArrowLeft, Lock, Phone, ChevronDown, ChevronRight } from 'lucide-react-native';
 
-// مصفوفة الدول الخاصة بمشروعك لتجنب خطأ "allCountries is not defined"
+// Array of countries for your project to avoid "allCountries is not defined" error
 const allCountries = [
   { name: "Jordan", code: "+962" }, 
   { name: "UAE", code: "+971" }, 
@@ -30,22 +30,22 @@ export default function AccountInfoScreen({ navigation, user, setUser, lang, isD
   const [expandedSection, setExpandedSection] = useState(null);
   const t = lang === 'ar';
 
-  // دالة التحديث والتحقق الأصلية الخاصة بكِ
+  // Your original update and validation function
   const handleUpdate = (type) => {
     if (type === 'pass') {
       if (oldPass !== user.password) {
-        Alert.alert("Error", "Old password incorrect");
+        Alert.alert(t ? "خطأ" : "Error", t ? "كلمة السر القديمة غير صحيحة" : "Old password incorrect");
         return;
       }
       if (newPass !== confirmPass) {
-        Alert.alert("Error", "Passwords do not match");
+        Alert.alert(t ? "خطأ" : "Error", t ? "كلمتا السر غير متطابقتين" : "Passwords do not match");
         return;
       }
       setUser(prevUser => ({
         ...prevUser,
         password: newPass,
       }));
-      Alert.alert("Success", "Password changed successfully");
+      Alert.alert(t ? "نجاح" : "Success", t ? "تم تغيير كلمة السر بنجاح" : "Password changed successfully");
       navigation.navigate('Chat');
       setOldPass('');
       setNewPass('');
@@ -57,7 +57,7 @@ export default function AccountInfoScreen({ navigation, user, setUser, lang, isD
         Alert.alert(t ? "خطأ" : "Error", t ? "الرجاء إدخال رقم الهاتف" : "Please enter a phone number");
         return;
       }
-      // حفظ رقم الهاتف ورمز الدولة المختار في الـ state العامة للمستخدم
+      // Save phone number and country code to the global user state
       setUser(prevUser => ({
         ...prevUser,
         phone: phone,
@@ -70,7 +70,7 @@ export default function AccountInfoScreen({ navigation, user, setUser, lang, isD
 
   return (
     <SafeAreaView style={[styles.container, isDark && { backgroundColor: '#121212' }]}>
-      {/* الهيدر العلوي */}
+      {/* Top header */}
       <View style={[styles.header, isDark && { borderBottomColor: '#222' }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ArrowLeft color={isDark ? '#fff' : '#000'} />
@@ -83,7 +83,7 @@ export default function AccountInfoScreen({ navigation, user, setUser, lang, isD
 
       <ScrollView style={{ padding: 20 }}>
         
-        {/* صف قسم كلمة السر */}
+        {/* Password section row */}
         <TouchableOpacity 
           style={[styles.menuRow, isDark && styles.darkMenuRow]} 
           onPress={() => setExpandedSection(expandedSection === 'pass' ? null : 'pass')}
@@ -97,7 +97,7 @@ export default function AccountInfoScreen({ navigation, user, setUser, lang, isD
           {expandedSection === 'pass' ? <ChevronDown color="#888" /> : <ChevronRight color="#888" />}
         </TouchableOpacity>
        
-        {/* حقول تغيير كلمة السر */}
+        {/* Password change fields */}
         {expandedSection === 'pass' && (
           <View style={[styles.expandedBox, isDark && { backgroundColor: '#1A1A1A' }]}>
             <TextInput 
@@ -125,12 +125,12 @@ export default function AccountInfoScreen({ navigation, user, setUser, lang, isD
               style={styles.primaryBtn}
               onPress={() => handleUpdate('pass')}
             >
-              <Text style={styles.primaryBtnText}>Save Password</Text>
+              <Text style={styles.primaryBtnText}>{t ? "حفظ كلمة السر" : "Save Password"}</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        {/* صف قسم رقم الهاتف */}
+        {/* Phone number section row */}
         <TouchableOpacity 
           style={[styles.menuRow, isDark && styles.darkMenuRow, { marginTop: 15 }]} 
           onPress={() => setExpandedSection(expandedSection === 'phone' ? null : 'phone')}
@@ -144,7 +144,7 @@ export default function AccountInfoScreen({ navigation, user, setUser, lang, isD
           {expandedSection === 'phone' ? <ChevronDown color="#888" /> : <ChevronRight color="#888" />}
         </TouchableOpacity>
 
-        {/* حقول رقم الهاتف وقائمة الدول */}
+        {/* Phone number fields and countries list */}
         {expandedSection === 'phone' && (
           <View style={[styles.expandedBox, isDark && { backgroundColor: '#1A1A1A' }]}>
             <TouchableOpacity 

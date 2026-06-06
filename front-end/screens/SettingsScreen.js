@@ -21,7 +21,7 @@ import {
   LogOut, 
   Moon 
 } from 'lucide-react-native';
-import * as ImagePicker from 'expo-image-picker'; // تأكدي من تثبيت حزمة expo-image-picker
+import * as ImagePicker from 'expo-image-picker'; // Ensure the expo-image-picker package is installed
 
 export default function SettingsScreen({ 
   navigation, 
@@ -91,7 +91,7 @@ export default function SettingsScreen({
   return (
     <SafeAreaView style={[styles.container, isDark && { backgroundColor: '#121212' }]}>
       
-      {/* HEADER - الهيدر */}
+      {/* HEADER */}
       <View style={[styles.header, isDark && { borderBottomColor: '#222' }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ArrowLeft color={isDark ? '#fff' : '#000'} size={24} />
@@ -104,7 +104,7 @@ export default function SettingsScreen({
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 30 }}>
         
-        {/* PROFILE AREA - قسم البروفايل */}
+        {/* PROFILE AREA */}
         <View style={styles.profileArea}>
           <TouchableOpacity onPress={showImageSourceAlert}>
             <View style={styles.profileAvatarWrapper}>
@@ -128,10 +128,10 @@ export default function SettingsScreen({
           </Text>
         </View>
 
-        {/* SETTINGS MENU - القائمة */}
+        {/* SETTINGS MENU */}
         <View style={{ paddingHorizontal: 20 }}>
           
-          {/* معلومات الحساب */}
+          {/* Account info */}
           <TouchableOpacity style={[styles.menuRow, isDark && { borderBottomColor: '#222' }]} onPress={() => navigation.navigate('AccountInfo')}>
             <View style={[styles.rowLeft, t && { flexDirection: 'row-reverse' }]}>
               <User color="#2D8C46" size={22} />
@@ -142,7 +142,7 @@ export default function SettingsScreen({
             {t ? <ChevronLeft color="#888" size={20} /> : <ChevronRight color="#888" size={20} />}
           </TouchableOpacity>
 
-          {/* الإشعارات */}
+          {/* Notifications */}
           <TouchableOpacity 
             style={[styles.menuRow, isDark && { borderBottomColor: '#222' }]} 
             onPress={() => setNotificationsEnabled(!notificationsEnabled)}
@@ -158,7 +158,7 @@ export default function SettingsScreen({
             </Text>
           </TouchableOpacity>
 
-          {/* تغيير اللغة */}
+          {/* Change language */}
           <TouchableOpacity 
             style={[styles.menuRow, isDark && { borderBottomColor: '#222' }]} 
             onPress={() => setLang(lang === 'en' ? 'ar' : 'en')}
@@ -174,7 +174,7 @@ export default function SettingsScreen({
             </Text>
           </TouchableOpacity>
 
-          {/* كرت تبديل الوضع الداكن (Dark Mode) */}
+          {/* Dark Mode toggle card */}
           <View style={[styles.themeCard, isDark && { backgroundColor: '#1E1E1E' }]}>
             <View style={[styles.themeLeft, t && { flexDirection: 'row-reverse' }]}>
               <View style={[styles.themeIcon, { backgroundColor: isDark ? '#2D2D2D' : '#F3F4F6' }]}>
@@ -199,7 +199,7 @@ export default function SettingsScreen({
             />
           </View>
 
-          {/* زر تسجيل الخروج */}
+          {/* Log out button */}
           <TouchableOpacity style={[styles.logoutRow, t && { flexDirection: 'row-reverse' }]} onPress={handleLogout}>
             <Text style={[styles.logoutLabel, t ? { marginRight: 10 } : { marginLeft: 10 }]}>
               {t ? 'تسجيل الخروج' : 'Log Out'}

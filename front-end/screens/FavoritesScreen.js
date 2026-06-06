@@ -2,33 +2,48 @@ import React from 'react';
 import { View, Text, FlatList, Image, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
 import { ArrowLeft, Trash2 } from 'lucide-react-native';
 
-const FAVORITES = [
-  { id: '1', title: 'Healthy Avocado Toast', time: '10 mins', img: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?q=80&w=1000' },
-  { id: '2', title: 'Grilled Chicken Salad', time: '20 mins', img: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=1000' },
-];
 
-const FavoritesScreen = ({ navigation }) => (
-  <SafeAreaView style={styles.container}>
-    <View style={styles.header}>
-      <TouchableOpacity onPress={() => navigation.goBack()}><ArrowLeft color="#2D5A27" /></TouchableOpacity>
-      <Text style={styles.title}>My Favorites</Text>
-      <View style={{ width: 24 }} />
-    </View>
-    <FlatList
-      data={FAVORITES}
-      renderItem={({ item }) => (
-        <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('RecipeDetail', { recipe: item })}>
-          <Image source={{ uri: item.img }} style={styles.cardImg} />
-          <View style={styles.cardInfo}>
-            <Text style={styles.cardTitle}>{item.title}</Text>
-            <Text style={styles.cardTime}>{item.time}</Text>
+
+const FavoritesScreen = ({ navigation, favorites, setFavorites, lang, isDark }) => {
+  const t = lang === 'ar';
+  
+  const removeFavorite = (id) => {
+    setFavorites(favorites.filter(fav => fav.id !== id));
+  };
+
+  return (
+    <SafeAreaView style={[styles.container, isDark && { backgroundColor: '#121212' }]}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()}><ArrowLeft color={isDark ? '#fff' : '#2D5A27'} /></TouchableOpacity>
+        <Text style={[styles.title, isDark && { color: '#fff' }]}>{t ? 'المفضلة' : 'My Favorites'}</Text>
+        <View style={{ width: 24 }} />
+      </View>
+      <FlatList
+        data={favorites || []}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <TouchableOpacity style={[styles.card, isDark && { backgroundColor: '#1E1E1E' }]} onPress={() => navigation.navigate('RecipeDetail', { recipe: item })}>
+            <Image source={{ uri: item.img }} style={styles.cardImg} />
+            <View style={styles.cardInfo}>
+              <Text style={[styles.cardTitle, isDark && { color: '#fff' }]}>{item.title}</Text>
+              <Text style={styles.cardTime}>{item.time}</Text>
+            </View>
+            <TouchableOpacity onPress={() => removeFavorite(item.id)}>
+              <Trash2 size={20} color="#C62828" />
+            </TouchableOpacity>
+          </TouchableOpacity>
+        )}
+        ListEmptyComponent={
+          <View style={{ padding: 20, alignItems: 'center' }}>
+            <Text style={{ color: isDark ? '#aaa' : '#666', fontSize: 16 }}>
+              {t ? 'لا توجد وصفات في المفضلة.' : 'No favorites yet.'}
+            </Text>
           </View>
-          <TouchableOpacity><Trash2 size={20} color="#C62828" /></TouchableOpacity>
-        </TouchableOpacity>
-      )}
-    />
-  </SafeAreaView>
-);
+        }
+      />
+    </SafeAreaView>
+  );
+};
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },

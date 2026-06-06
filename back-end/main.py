@@ -1,11 +1,15 @@
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List, Optional
+import tempfile
+import os
+import shutil
 
 # Import the search function from our model
 from model.ai_search import search_recipes
-from model.gemini_helper import modify_recipe_with_gemini, guide_recipe_with_gemini
+from model.gemini_helper import modify_recipe_with_gemini, guide_recipe_with_gemini, transcribe_audio_with_gemini, chat_with_gemini
 
 app = FastAPI(
     title="Arabic AI Cooking Assistant API",
@@ -16,15 +20,16 @@ app = FastAPI(
 # Configure CORS to allow requests from the React frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "https://your-frontend-domain.com"
-    ]
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount static files for images
+images_path = os.path.join(os.path.dirname(__file__), "data", "filtered_images")
+if os.path.exists(images_path):
+    app.mount("/images", StaticFiles(directory=images_path), name="images")
 
 # Define response models for documentation (optional but good practice)
 class Ingredient(BaseModel):
@@ -56,6 +61,17 @@ class ModifyRecipeResponse(BaseModel):
 class SearchAndGuideResponse(BaseModel):
     recipe: Optional[RecipeResponse] = None
     guide_text: str
+
+class ChatMessage(BaseModel):
+    role: str
+    text: str
+
+class ChatRequest(BaseModel):
+    message: str
+    history: List[ChatMessage] = []
+
+class ChatResponse(BaseModel):
+    response: str
 
 @app.get("/", tags=["Health"])
 def read_root():
@@ -123,6 +139,74 @@ def search_and_guide(
         
         return {"recipe": top_recipe, "guide_text": guide_text}
     except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+
+@app.post("/chat", response_model=ChatResponse, tags=["AI Features"])
+def chat_endpoint(request: ChatRequest):
+    """
+    Intelligent conversational endpoint that maintains context and queries the DB when needed.
+    """
+    try:
+        response_text = chat_with_gemini(request.message, request.history)
+        return {"response": response_text}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+
+# Global cache for Whisper model
+whisper_model = None
+
+@app.post("/transcribe", tags=["AI Features"])
+async def transcribe_audio(audio: UploadFile = File(...)):
+    """
+    Receives an audio file from the frontend, saves it temporarily, and uses local Whisper AI to transcribe it.
+    """
+    global whisper_model
+    try:
+        import whisper
+        import numpy as np
+        from pydub import AudioSegment
+        import imageio_ffmpeg
+        import os
+        
+        # Lazy load the model on first use (base model is small and fast)
+        if whisper_model is None:
+            print("Loading local Whisper model (base)...")
+            whisper_model = whisper.load_model("base")
+            print("Whisper model loaded!")
+            
+        # Set ffmpeg path for pydub
+        AudioSegment.converter = imageio_ffmpeg.get_ffmpeg_exe()
+
+        # Create a temporary file to save the uploaded audio (.m4a from frontend)
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".m4a") as temp_file:
+            shutil.copyfileobj(audio.file, temp_file)
+            temp_file_path = temp_file.name
+            
+        # Load audio with pydub and convert to 16kHz mono (required by Whisper)
+        sound = AudioSegment.from_file(temp_file_path)
+        sound = sound.set_frame_rate(16000).set_channels(1)
+        
+        # Convert audio to float32 numpy array
+        samples = np.array(sound.get_array_of_samples())
+        samples = samples.astype(np.float32) / 32768.0
+        
+        # Transcribe using Whisper, enforcing Arabic language
+        result = whisper_model.transcribe(samples, language="ar")
+        text = result["text"].strip()
+        
+        # Clean up local temp file
+        os.remove(temp_file_path)
+        
+        return {"text": text}
+        
+    except Exception as e:
+        print(f"Transcription error: {e}")
+        # Clean up in case of error
+        if 'temp_file_path' in locals() and os.path.exists(temp_file_path):
+            try:
+                os.remove(temp_file_path)
+            except:
+                pass            
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 # If you want to run the server directly from this script:

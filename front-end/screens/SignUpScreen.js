@@ -26,7 +26,7 @@ export default function SignUpScreen({ navigation, setUser, lang, isDark }) {
   };
 
   const handleSignUp = () => {
-    // التأكد من تعبئة كل الحقول
+    // Ensure all fields are filled
     if (!name || !email || !password || !confirmPassword) {
       Alert.alert(
         t ? "خطأ" : "Error",
@@ -35,7 +35,7 @@ export default function SignUpScreen({ navigation, setUser, lang, isDark }) {
       return;
     }
 
-    // التأكد من الإيميل
+    // Validate email format
     const emailRegex = /\S+@\S+\.\S+/;
     if (!emailRegex.test(email)) {
       Alert.alert(
@@ -45,7 +45,7 @@ export default function SignUpScreen({ navigation, setUser, lang, isDark }) {
       return;
     }
 
-    // التأكد من قوة كلمة السر
+    // Validate password strength
     if (!isStrongPassword(password)) {
       Alert.alert(
         t ? "كلمة سر ضعيفة" : "Weak Password",
@@ -56,7 +56,7 @@ export default function SignUpScreen({ navigation, setUser, lang, isDark }) {
       return;
     }
 
-    // التأكد من تطابق كلمة السر
+    // Ensure passwords match
     if (password !== confirmPassword) {
       Alert.alert(
         t ? "خطأ" : "Error",
@@ -65,7 +65,7 @@ export default function SignUpScreen({ navigation, setUser, lang, isDark }) {
       return;
     }
 
-    // حفظ بيانات المستخدم في الـ State العامة للتطبيق
+    // Save user data to the global app State
     setUser({
       name,
       email,
@@ -73,7 +73,7 @@ export default function SignUpScreen({ navigation, setUser, lang, isDark }) {
       isLoggedIn: true,
     });
 
-    // الانتقال مباشرة إلى شاشة الشات
+    // Navigate directly to the Chat screen
     navigation.replace('Chat');
   };
 
@@ -98,7 +98,7 @@ export default function SignUpScreen({ navigation, setUser, lang, isDark }) {
 
         {/* Input Form */}
         <View style={{ width: '100%' }}>
-          {/* حقل الاسم */}
+          {/* Name field */}
           <Text style={[styles.sectionLabel, isDark && { color: '#ccc' }]}>
             {t ? 'الاسم الكامل' : 'FULL NAME'}
           </Text>
@@ -109,7 +109,7 @@ export default function SignUpScreen({ navigation, setUser, lang, isDark }) {
             onChangeText={setName} 
           />
           
-          {/* حقل البريد الإلكتروني */}
+          {/* Email field */}
           <Text style={[styles.sectionLabel, isDark && { color: '#ccc' }]}>
             {t ? 'البريد الإلكتروني' : 'EMAIL ADDRESS'}
           </Text>
@@ -122,7 +122,7 @@ export default function SignUpScreen({ navigation, setUser, lang, isDark }) {
             onChangeText={setEmail} 
           />
           
-          {/* حقل كلمة السر */}
+          {/* Password field */}
           <Text style={[styles.sectionLabel, isDark && { color: '#ccc' }]}>
             {t ? 'كلمة السر' : 'PASSWORD'}
           </Text>
@@ -140,7 +140,7 @@ export default function SignUpScreen({ navigation, setUser, lang, isDark }) {
             </TouchableOpacity>
           </View>
 
-          {/* حقل تأكيد كلمة السر */}
+          {/* Confirm password field */}
           <Text style={[styles.sectionLabel, isDark && { color: '#ccc' }]}>
             {t ? 'تأكيد كلمة السر' : 'CONFIRM PASSWORD'}
           </Text>
@@ -156,7 +156,7 @@ export default function SignUpScreen({ navigation, setUser, lang, isDark }) {
           </View>
         </View>
 
-        {/* زر إنشاء الحساب */}
+        {/* Sign up button */}
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={handleSignUp}
@@ -167,14 +167,14 @@ export default function SignUpScreen({ navigation, setUser, lang, isDark }) {
           </Text>
         </TouchableOpacity>
 
-        {/* الفاصل الخطي (OR) */}
+        {/* Divider line (OR) */}
         <View style={styles.dividerContainer}>
           <View style={[styles.dividerLine, isDark && { backgroundColor: '#333' }]} />
           <Text style={styles.dividerText}>{t ? 'أو' : 'OR'}</Text>
           <View style={[styles.dividerLine, isDark && { backgroundColor: '#333' }]} />
         </View>
 
-        {/* زر جوجل */}
+        {/* Google button */}
         <TouchableOpacity 
           style={[styles.socialBtn, isDark && { backgroundColor: '#1E1E1E', borderColor: '#333' }]} 
           onPress={() => Alert.alert(t ? "جوجل" : "Google", t ? "تم اختيار جوجل" : "Google Selected")}
@@ -185,7 +185,7 @@ export default function SignUpScreen({ navigation, setUser, lang, isDark }) {
           </Text>
         </TouchableOpacity>
 
-        {/* التبديل لشاشة تسجيل الدخول */}
+        {/* Switch to login screen */}
         <TouchableOpacity style={styles.loginFooter} onPress={() => navigation.navigate('Login')}>
           <Text style={styles.footerText}>
             {t ? 'لديك حساب بالفعل؟ ' : 'Already have an account? '}

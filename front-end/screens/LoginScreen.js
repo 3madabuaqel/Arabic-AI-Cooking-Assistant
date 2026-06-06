@@ -10,14 +10,14 @@ import {
   Image, 
   Alert 
 } from 'react-native';
-import { ArrowLeft, Utensils, Eye } from 'lucide-react-native';
+import { ArrowLeft, ChefHat, Eye } from 'lucide-react-native';
 
 export default function LoginScreen({ navigation, setUser, lang, isDark, user }) {
   const t = lang === 'ar';
   const [showPass, setShowPass] = useState(false);
   const [password, setPassword] = useState('');
 
-  // دالة تسجيل الدخول الأصلية الخاصة بكِ
+  // Your original login function
   const handleLogin = (method) => {
     setUser({ ...user, isLoggedIn: true, name: 'Sara', password: user.password || '123456' });
     Alert.alert(t ? "نجاح" : "Success", `${t ? "تم الدخول عبر" : "Logged in via"} ${method}`);
@@ -28,23 +28,23 @@ export default function LoginScreen({ navigation, setUser, lang, isDark, user })
     <SafeAreaView style={[styles.container, isDark && { backgroundColor: '#121212' }]}>
       <ScrollView contentContainerStyle={styles.centerContent}>
         
-        {/* زر الرجوع */}
+        {/* Back button */}
         <TouchableOpacity style={styles.backBtnAction} onPress={() => navigation.goBack()}>
           <ArrowLeft color={isDark ? '#fff' : '#000'} size={24} />
         </TouchableOpacity>
 
-        {/* المربع الأخضر مع الأيقونة */}
+        {/* Green box with icon */}
         <View style={styles.greenIconBox}>
-          <Utensils color="white" size={32} />
+          <ChefHat color="white" size={32} />
         </View>
 
-        {/* النصوص الترحيبية */}
+        {/* Welcome texts */}
         <View style={styles.textWrapper}>
           <Text style={[styles.titleText, isDark && { color: '#fff' }]}>Welcome Back</Text>
           <Text style={[styles.subtitleText, isDark && { color: '#aaa' }]}>Log in to continue</Text>
         </View>
 
-        {/* حقول الإدخال */}
+        {/* Input fields */}
         <View style={styles.formContainer}>
           <Text style={[styles.label, isDark && { color: '#ccc' }]}>Email</Text>
           <TextInput 
@@ -68,7 +68,7 @@ export default function LoginScreen({ navigation, setUser, lang, isDark, user })
             </TouchableOpacity>
           </View>
 
-          {/* زر نسيت كلمة المرور */}
+          {/* Forgot password button */}
           <TouchableOpacity 
             style={styles.forgotBtn} 
             onPress={() => {
@@ -79,7 +79,7 @@ export default function LoginScreen({ navigation, setUser, lang, isDark, user })
             <Text style={styles.greenBold}>Forgot Password?</Text>
           </TouchableOpacity>
 
-          {/* زر تسجيل الدخول الرئيسي */}
+          {/* Main login button */}
           <TouchableOpacity
             style={styles.primaryBtn}
             onPress={() => {
@@ -87,7 +87,7 @@ export default function LoginScreen({ navigation, setUser, lang, isDark, user })
                 Alert.alert("Error", "Enter password");
                 return;
               }
-              // استدعاء دالة تسجيل الدخول التي قمتِ بكتابتها وتمرير الطريقة "Email"
+              // Call the login function you wrote and pass the method "Email"
               handleLogin('Email');
             }}
           >
@@ -95,14 +95,14 @@ export default function LoginScreen({ navigation, setUser, lang, isDark, user })
           </TouchableOpacity>
         </View>
 
-        {/* فاصل OR */}
+        {/* OR divider */}
         <View style={styles.orDivider}>
           <View style={[styles.line, isDark && { backgroundColor: '#333' }]} />
           <Text style={[styles.orText, isDark && { color: '#777' }]}>OR</Text>
           <View style={[styles.line, isDark && { backgroundColor: '#333' }]} />
         </View>
 
-        {/* زر جوجل */}
+        {/* Google button */}
         <TouchableOpacity 
           style={[styles.googleBtn, isDark && { borderColor: '#333' }]}   
           onPress={() => handleLogin('Google')}
@@ -114,7 +114,7 @@ export default function LoginScreen({ navigation, setUser, lang, isDark, user })
           <Text style={[styles.googleBtnText, isDark && { color: '#fff' }]}>Continue with Google</Text>
         </TouchableOpacity>
 
-        {/* أسفل الشاشة لإنشاء حساب جديد */}
+        {/* Bottom of the screen to create a new account */}
         <View style={styles.footerRow}>
           <Text style={{ color: isDark ? '#aaa' : '#000' }}>Don't have an account? </Text>
           <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>

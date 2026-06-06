@@ -14,15 +14,15 @@ export default function ForgotPassScreen({ navigation, lang, isDark }) {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? '#121212' : '#F5F7F6' }}>
-      {/* ScrollView مع ستايل يخلي كل شي بالمنتصف */}
+      {/* ScrollView with style to center everything */}
       <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
         
-        {/* الحاوية البيضاء (البطاقة) - هي اللي بتعمل الشكل المطلوب */}
+        {/* White container (Card) - creates the desired shape */}
         <View style={{
           backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
           width: '100%',
-          maxWidth: 400, // هذا السطر هو اللي بيمنع العناصر تفرش عرضي في المتصفح
-          borderRadius: 35, // حواف دائرية كبيرة زي الصورة
+          maxWidth: 400, // This line prevents items from spreading horizontally in the browser
+          borderRadius: 35, // Large rounded borders like the image
           padding: 30,
           elevation: 10,
           shadowColor: '#000',
@@ -31,7 +31,7 @@ export default function ForgotPassScreen({ navigation, lang, isDark }) {
           shadowRadius: 20,
         }}>
 
-          {/* زر الرجوع */}
+          {/* Back button */}
           <TouchableOpacity 
             style={{ alignSelf: 'flex-start', marginBottom: 20 }} 
             onPress={() => navigation.goBack()}
@@ -41,17 +41,17 @@ export default function ForgotPassScreen({ navigation, lang, isDark }) {
             </View>
           </TouchableOpacity>
 
-          {/* الأيقونة المركزية (المربع الأخضر الفاتح) */}
+          {/* Central icon (Light green square) */}
           <View style={{ alignSelf: 'center', width: 80, height: 80, backgroundColor: isDark ? '#1C3524' : '#E1F0E6', borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginBottom: 20 }}>
              <LockKeyhole color="#2D8C46" size={35} />
           </View>
 
-          {/* العنوان */}
+          {/* Title */}
           <Text style={{ fontSize: 28, fontWeight: '800', color: isDark ? '#fff' : '#1A1A1A', textAlign: 'center', marginBottom: 35 }}>
             {t ? 'نسيت كلمة السر' : 'Forgot Password'}
           </Text>
 
-          {/* حقل الإيميل وزر الإرسال */}
+          {/* Email field and send button */}
           <View style={{ width: '100%' }}>
             <Text style={{ fontSize: 11, fontWeight: '700', color: isDark ? '#ccc' : '#333', marginBottom: 8, letterSpacing: 1 }}>
               {t ? 'عنوان البريد الإلكتروني' : 'EMAIL ADDRESS'}
@@ -72,7 +72,7 @@ export default function ForgotPassScreen({ navigation, lang, isDark }) {
             </TouchableOpacity>
           </View>
 
-          {/* الرابط السفلي للرجوع لتسجيل الدخول */}
+          {/* Bottom link to return to login */}
           <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 30 }}>
             <Text style={{ color: isDark ? '#aaa' : '#666', fontSize: 14 }}>
               {t ? 'تذكرت كلمة السر؟ ' : 'Remember your password? '}
