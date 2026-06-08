@@ -10,8 +10,7 @@ import {
 } from 'react-native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import Icon from 'react-native-vector-icons/Feather';
-import { auth } from '../firebaseConfig';
-import { signOut } from 'firebase/auth';
+import auth from '@react-native-firebase/auth';
 const allCountries = [
   { name: "Jordan", code: "+962" },
   { name: "UAE", code: "+971" },
@@ -50,7 +49,7 @@ const SettingsScreen = ({ navigation }) => {
   const [countryModalVisible, setCountryModalVisible] = useState(false);
   const [phoneInputVisible, setPhoneInputVisible] = useState(false);
   useEffect(() => {
-    const user = auth.currentUser;
+    const user = auth().currentUser;
 
     if (!user) {
       navigation.replace('Login');
@@ -100,9 +99,9 @@ const openCamera = () => {
   };
   const updateFirebasePhoto = async (uri) => {
     try {
-      const user = auth.currentUser;
+      const user = auth().currentUser;
       if (user) {
-        await updateProfile(user, { photoURL: uri });
+        await user.updateProfile({ photoURL: uri });
         setPhotoURL(uri); // تحديث الواجهة تلقائياً بالصورة الجديدة
         Alert.alert('نجاح', 'تم تحديث صورة البروفايل بنجاح!');
       }
@@ -123,7 +122,7 @@ const openCamera = () => {
   };
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      await auth().signOut();
       navigation.replace('Login');
     } catch (error) {
       Alert.alert('Error', error.message);

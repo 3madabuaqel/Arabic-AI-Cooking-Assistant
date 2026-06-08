@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "149721092255",
+    "project_id": "cookwithai-d17c5",
+    "storage_bucket": "cookwithai-d17c5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:149721092255:android:5d1670f294adf59e1452aa",
+        "android_client_info": {
+          "package_name": "com.anonymous.CookWithAI"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB38QJWCRDAL8FeVdPqgC2YJ71WeVDPEKU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

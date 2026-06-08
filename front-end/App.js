@@ -10,7 +10,7 @@ import LoginScreen from './screens/LoginScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import AccountInfoScreen from './screens/AccountInfoScreen';
 import SignUpScreen from './screens/SignUpScreen';
-import ForgotPassScreen from './screens/ForgotPassScreen';
+import ForgotPassScreen from './screens/ForgotPassword';
 import VerifyScreen from './screens/VerifyScreen';
 import FavoritesScreen from './screens/FavoritesScreen';
 
