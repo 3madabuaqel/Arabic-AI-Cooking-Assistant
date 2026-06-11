@@ -9,10 +9,10 @@ export const AppProvider = ({ children }) => {
   const [lang, setLang] = useState('ar');
   const [user, setUser] = useState(null);
 
-  // دالة لتغيير اللغة بسهولة
+  // Function to change language easily
   const toggleLang = () => setLang(prev => (prev === 'ar' ? 'en' : 'ar'));
   
-  // دالة لتغيير الثيم
+  // Function to change theme
   const toggleTheme = () => setIsDark(prev => !prev);
 
   return (

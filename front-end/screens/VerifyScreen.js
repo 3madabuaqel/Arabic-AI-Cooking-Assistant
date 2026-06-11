@@ -1,13 +1,14 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, SafeAreaView, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, RefreshCw } from 'lucide-react-native';
 
 export default function VerifyScreen({ navigation, route, lang, isDark }) {
-  // استقبال الإيميل الممرر من شاشة ForgotPassword
+  // Receive the email passed from ForgotPassword screen
   const email = route?.params?.email || ''; 
   const t = lang === 'ar';
   
-  // إنشاء مصفوفة من الحالات لمربعات الكود
+  // Create an array of refs for the code inputs
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const inputs = useRef([]);
 
@@ -16,7 +17,7 @@ export default function VerifyScreen({ navigation, route, lang, isDark }) {
     newCode[index] = text;
     setCode(newCode);
 
-    // التنقل تلقائياً للمربع التالي
+    // Automatically focus on the next input
     if (text && index < 5) {
       inputs.current[index + 1].focus();
     }
@@ -28,7 +29,7 @@ export default function VerifyScreen({ navigation, route, lang, isDark }) {
       Alert.alert("Error", "Please enter the full 6-digit code");
       return;
     }
-    // هنا يتم إضافة منطق التحقق من الكود مع السيرفر/Firebase
+    // Here you add the logic to verify the code with the server/Firebase
     Alert.alert("Success", "Code verified!");
     navigation.navigate('Chat');
   };

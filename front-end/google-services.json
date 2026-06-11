@@ -12,7 +12,20 @@
           "package_name": "com.anonymous.CookWithAI"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "149721092255-r49igggfo0pacv3tb72n00ikjjuk7b8n.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.anonymous.CookWithAI",
+            "certificate_hash": "482957d1fb7b02d747c974bbb45b91af7035f0b4"
+          }
+        },
+        {
+          "client_id": "149721092255-bd5691qkq9cuvklaefo1pk2ea7gu70en.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyB38QJWCRDAL8FeVdPqgC2YJ71WeVDPEKU"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "149721092255-bd5691qkq9cuvklaefo1pk2ea7gu70en.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

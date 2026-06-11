@@ -1,63 +1,72 @@
 import React, { useState } from 'react';
 import auth from '@react-native-firebase/auth';
-import { 
-  View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Image, Alert 
+import {
+  View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Image, Alert
 } from 'react-native';
-import { ArrowLeft, Utensils, Eye } from 'lucide-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { ArrowLeft, Utensils, Eye, Smartphone, User } from 'lucide-react-native';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
+
+GoogleSignin.configure({
+  webClientId: '149721092255-bd5691qkq9cuvklaefo1pk2ea7gu70en.apps.googleusercontent.com',
+});
+
 export default function LoginScreen({ navigation, setUser, lang, isDark, user }) {
   const t = lang === 'ar';
   const [showPass, setShowPass] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-GoogleSignin.configure({
-  webClientId: 'ضعي هنا Web Client ID من Firebase',
-});
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert("خطأ", "يرجى تعبئة البريد وكلمة المرور");
+      Alert.alert("خطأ", "يرجى تعبئة الحقل وكلمة المرور");
       return;
     }
     try {
-      const userCredential = await auth().signInWithEmailAndPassword(email.trim(), password);
-      setUser({ ...user, isLoggedIn: true, name: userCredential.user.email });
+      let loginEmail = email.trim();
+      // If user entered a phone number (contains digits and no @), convert to the fake email
+      if (!loginEmail.includes('@') && /\d+/.test(loginEmail)) {
+        loginEmail = loginEmail.replace(/\+/g, '') + '@arabicai.com';
+      }
+      const userCredential = await auth().signInWithEmailAndPassword(loginEmail, password);
+      setUser({ ...user, isLoggedIn: true, name: userCredential.user.displayName || userCredential.user.email });
       navigation.replace('Chat');
     } catch (error) {
-      Alert.alert("خطأ", error.message);
+      Alert.alert("خطأ", "البيانات غير صحيحة أو החساب غير موجود");
     }
   };
-const signInWithGoogle = async () => {
-  try {
-    await GoogleSignin.hasPlayServices();
+  const signInWithGoogle = async () => {
+    try {
+      await GoogleSignin.hasPlayServices();
 
-    const userInfo = await GoogleSignin.signIn();
+      const userInfo = await GoogleSignin.signIn();
 
-    const idToken = userInfo.data?.idToken || userInfo.idToken;
+      const idToken = userInfo.data?.idToken || userInfo.idToken;
 
-    const googleCredential =
-      auth.GoogleAuthProvider.credential(idToken);
+      const googleCredential =
+        auth.GoogleAuthProvider.credential(idToken);
 
-    const userCredential =
-      await auth().signInWithCredential(googleCredential);
+      const userCredential =
+        await auth().signInWithCredential(googleCredential);
 
-    setUser({
-      ...user,
-      isLoggedIn: true,
-      name:
-        userCredential.user.displayName ||
-        userCredential.user.email,
-    });
+      setUser({
+        ...user,
+        isLoggedIn: true,
+        name:
+          userCredential.user.displayName ||
+          userCredential.user.email,
+      });
 
-    navigation.replace('Chat');
+      navigation.replace('Chat');
 
-  } catch (error) {
-    Alert.alert('Google Login Error', error.message);
-  }
-};
+    } catch (error) {
+      console.error('Google Sign-In Error:', error);
+      Alert.alert('Google Login Error', `${error.code || 'UNKNOWN_ERROR'}: ${error.message}`);
+    }
+  };
   return (
     <SafeAreaView style={[styles.container, isDark && { backgroundColor: '#121212' }]}>
       <ScrollView contentContainerStyle={styles.centerContent}>
-        
+
         <TouchableOpacity style={styles.backBtnAction} onPress={() => navigation.goBack()}>
           <ArrowLeft color={isDark ? '#fff' : '#000'} size={24} />
         </TouchableOpacity>
@@ -72,10 +81,10 @@ const signInWithGoogle = async () => {
         </View>
 
         <View style={styles.formContainer}>
-          <Text style={[styles.label, isDark && { color: '#ccc' }]}>Email</Text>
-          <TextInput 
-            style={[styles.input, isDark && styles.darkInput]} 
-            placeholder="your@email.com" 
+          <Text style={[styles.label, isDark && { color: '#ccc' }]}>Email or Phone Number</Text>
+          <TextInput
+            style={[styles.input, isDark && styles.darkInput]}
+            placeholder="example@email.com or +962..."
             placeholderTextColor={isDark ? '#777' : '#999'}
             value={email}
             onChangeText={setEmail}
@@ -84,9 +93,9 @@ const signInWithGoogle = async () => {
 
           <Text style={[styles.label, { marginTop: 20 }, isDark && { color: '#ccc' }]}>Password</Text>
           <View style={[styles.passwordWrapper, isDark && styles.darkInput]}>
-            <TextInput 
-              style={[styles.passwordInput, isDark && { color: '#fff' }]} 
-              placeholder="Enter your password" 
+            <TextInput
+              style={[styles.passwordInput, isDark && { color: '#fff' }]}
+              placeholder="Enter your password"
               secureTextEntry={!showPass}
               placeholderTextColor={isDark ? '#777' : '#999'}
               value={password}
@@ -114,15 +123,33 @@ const signInWithGoogle = async () => {
         </View>
 
         {/* زر جوجل */}
-     <TouchableOpacity
-  style={[styles.googleBtn, isDark && { borderColor: '#333' }]}
-  onPress={signInWithGoogle}
->      
-          <Image 
-            source={{ uri: 'https://cdn-icons-png.flaticon.com/512/2991/2991148.png' }} 
-            style={styles.googleIcon} 
+        <TouchableOpacity
+          style={[styles.googleBtn, isDark && { borderColor: '#333' }]}
+          onPress={signInWithGoogle}
+        >
+          <Image
+            source={{ uri: 'https://cdn-icons-png.flaticon.com/512/2991/2991148.png' }}
+            style={styles.googleIcon}
           />
           <Text style={[styles.googleBtnText, isDark && { color: '#fff' }]}>Continue with Google</Text>
+        </TouchableOpacity>
+
+        {/* زر الدخول كضيف */}
+        <TouchableOpacity
+          style={[styles.googleBtn, { marginTop: 15 }, isDark && { borderColor: '#333' }]}
+          onPress={() => {
+            setUser({
+              name: 'Guest',
+              email: 'guest@arabicai.com',
+              phone: '',
+              isLoggedIn: true,
+              isGuest: true
+            });
+            navigation.replace('Chat');
+          }}
+        >
+          <User color={isDark ? '#fff' : '#333'} size={20} style={{ marginRight: 10 }} />
+          <Text style={[styles.googleBtnText, isDark && { color: '#fff' }]}>Continue as Guest</Text>
         </TouchableOpacity>
 
         {/* أسفل الشاشة لإنشاء حساب جديد */}

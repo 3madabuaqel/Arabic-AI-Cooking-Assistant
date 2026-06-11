@@ -12,3 +12,5 @@ numpy
 openai-whisper
 pydub
 imageio-ffmpeg
+ultralytics
+opencv-python

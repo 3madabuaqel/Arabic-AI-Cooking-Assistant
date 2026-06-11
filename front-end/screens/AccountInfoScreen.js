@@ -5,13 +5,15 @@ import {
   TextInput, 
   TouchableOpacity, 
   StyleSheet, 
-  SafeAreaView, 
   ScrollView, 
-  Alert 
+  Alert,
+  Image
 } from 'react-native';
-import { ArrowLeft, Lock, Phone, ChevronDown, ChevronRight } from 'lucide-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { ArrowLeft, Lock, Phone, ChevronDown, ChevronRight, User, Camera } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
+import auth from '@react-native-firebase/auth';
 
-// Array of countries for your project to avoid "allCountries is not defined" error
 const allCountries = [
   { name: "Jordan", code: "+962" }, 
   { name: "UAE", code: "+971" }, 
@@ -23,6 +25,7 @@ const allCountries = [
 export default function AccountInfoScreen({ navigation, user, setUser, lang, isDark }) {
   const [oldPass, setOldPass] = useState('');
   const [newPass, setNewPass] = useState('');
+  const [newName, setNewName] = useState(user.name || '');
   const [confirmPass, setConfirmPass] = useState('');
   const [phone, setPhone] = useState(user.phone || '');
   const [selectedCountry, setSelectedCountry] = useState(allCountries[0]);
@@ -30,8 +33,23 @@ export default function AccountInfoScreen({ navigation, user, setUser, lang, isD
   const [expandedSection, setExpandedSection] = useState(null);
   const t = lang === 'ar';
 
-  // Your original update and validation function
   const handleUpdate = (type) => {
+    if (type === 'name') {
+      if (!newName.trim()) {
+        Alert.alert(t ? "خطأ" : "Error", t ? "الرجاء إدخال اسم" : "Please enter a name");
+        return;
+      }
+      const now = new Date().getTime();
+      const fourteenDays = 14 * 24 * 60 * 60 * 1000;
+      if (user.lastChangeNameDate && (now - user.lastChangeNameDate < fourteenDays)) {
+         const daysLeft = Math.ceil((fourteenDays - (now - user.lastChangeNameDate)) / (1000 * 60 * 60 * 24));
+         Alert.alert(t ? "عذراً" : "Sorry", t ? `لا يمكنك تغيير اسمك إلا بعد ${daysLeft} يوم` : `You can change your name after ${daysLeft} days`);
+         return;
+      }
+      setUser(prevUser => ({...prevUser, name: newName, lastChangeNameDate: now}));
+      Alert.alert(t ? "نجاح" : "Success", t ? "تم تغيير الاسم بنجاح" : "Name changed successfully");
+    }
+
     if (type === 'pass') {
       if (oldPass !== user.password) {
         Alert.alert(t ? "خطأ" : "Error", t ? "كلمة السر القديمة غير صحيحة" : "Old password incorrect");
@@ -41,10 +59,7 @@ export default function AccountInfoScreen({ navigation, user, setUser, lang, isD
         Alert.alert(t ? "خطأ" : "Error", t ? "كلمتا السر غير متطابقتين" : "Passwords do not match");
         return;
       }
-      setUser(prevUser => ({
-        ...prevUser,
-        password: newPass,
-      }));
+      setUser(prevUser => ({...prevUser, password: newPass}));
       Alert.alert(t ? "نجاح" : "Success", t ? "تم تغيير كلمة السر بنجاح" : "Password changed successfully");
       navigation.navigate('Chat');
       setOldPass('');
@@ -57,20 +72,39 @@ export default function AccountInfoScreen({ navigation, user, setUser, lang, isD
         Alert.alert(t ? "خطأ" : "Error", t ? "الرجاء إدخال رقم الهاتف" : "Please enter a phone number");
         return;
       }
-      // Save phone number and country code to the global user state
-      setUser(prevUser => ({
-        ...prevUser,
-        phone: phone,
-        countryCode: selectedCountry.code
-      }));
+      setUser(prevUser => ({...prevUser, phone: phone, countryCode: selectedCountry.code}));
       Alert.alert(t ? "نجاح" : "Success", t ? "تم حفظ رقم الهاتف بنجاح" : "Phone number saved successfully");
       navigation.navigate('Chat');
     }
   };
 
+  const handlePickImage = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permissionResult.granted) {
+      Alert.alert(t ? 'خطأ' : 'Error', t ? 'نحتاج إذن للوصول لمعرض الصور' : 'Gallery permission required');
+      return;
+    }
+    let result = await ImagePicker.launchImageLibraryAsync({ 
+      quality: 0.7,
+      allowsEditing: true,
+      aspect: [1, 1],
+    });
+    if (!result.canceled) {
+      const uri = result.assets[0].uri;
+      setUser(prevUser => ({...prevUser, profileImage: uri}));
+      try {
+        const firebaseUser = auth().currentUser;
+        if (firebaseUser) {
+          await firebaseUser.updateProfile({ photoURL: uri });
+        }
+      } catch (e) {
+        console.error('Error updating Firebase photo:', e);
+      }
+    }
+  };
+
   return (
     <SafeAreaView style={[styles.container, isDark && { backgroundColor: '#121212' }]}>
-      {/* Top header */}
       <View style={[styles.header, isDark && { borderBottomColor: '#222' }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ArrowLeft color={isDark ? '#fff' : '#000'} />
@@ -83,9 +117,66 @@ export default function AccountInfoScreen({ navigation, user, setUser, lang, isD
 
       <ScrollView style={{ padding: 20 }}>
         
-        {/* Password section row */}
+        <View style={{ alignItems: 'center', marginBottom: 30, marginTop: 10 }}>
+          <View style={{ position: 'relative' }}>
+            <Image 
+              source={{ uri: user?.profileImage || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png' }} 
+              style={{ width: 100, height: 100, borderRadius: 50, borderWidth: 2, borderColor: '#2D8C46' }} 
+            />
+            <TouchableOpacity 
+              style={{ position: 'absolute', bottom: 0, right: 0, backgroundColor: '#2D8C46', padding: 8, borderRadius: 20, borderWidth: 3, borderColor: isDark ? '#121212' : '#FCFCFC' }}
+              onPress={handlePickImage}
+            >
+              <Camera color="#fff" size={16} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
         <TouchableOpacity 
           style={[styles.menuRow, isDark && styles.darkMenuRow]} 
+          onPress={() => setExpandedSection(expandedSection === 'name' ? null : 'name')}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <User color="#2D8C46" size={20} />
+            <Text style={[styles.menuLabel, { marginLeft: 10 }, isDark && { color: '#fff' }]}>
+              {t ? 'تغيير الاسم' : 'Change Name'}
+            </Text>
+          </View>
+          {expandedSection === 'name' ? <ChevronDown color="#888" /> : <ChevronRight color="#888" />}
+        </TouchableOpacity>
+
+        {expandedSection === 'name' && (
+          <View style={[styles.expandedBox, isDark && { backgroundColor: '#1A1A1A' }]}>
+            <TextInput 
+              style={[styles.input, isDark && styles.darkInput, { opacity: 0.6, marginBottom: 10 }]} 
+              value={user.email || (t ? 'لا يوجد بريد إلكتروني' : 'No Email')}
+              editable={false}
+              placeholderTextColor="#888" 
+            />
+            <TextInput 
+              style={[styles.input, isDark && styles.darkInput]} 
+              placeholder={t ? "اسم المستخدم الجديد" : "New Username"} 
+              value={newName}
+              onChangeText={setNewName} 
+              placeholderTextColor="#888" 
+            />
+            {user.lastChangeNameDate && (new Date().getTime() - user.lastChangeNameDate < 14 * 24 * 60 * 60 * 1000) ? (
+              <Text style={{color: '#E53935', fontSize: 12, marginTop: 10, textAlign: 'center'}}>
+                {t ? 'لا يمكنك تغيير الاسم إلا مرة كل 14 يوماً' : 'You can only change your name once every 14 days'}
+              </Text>
+            ) : null}
+            <TouchableOpacity
+              style={[styles.primaryBtn, user.lastChangeNameDate && (new Date().getTime() - user.lastChangeNameDate < 14 * 24 * 60 * 60 * 1000) && { backgroundColor: '#888' }]}
+              onPress={() => handleUpdate('name')}
+              disabled={user.lastChangeNameDate && (new Date().getTime() - user.lastChangeNameDate < 14 * 24 * 60 * 60 * 1000)}
+            >
+              <Text style={styles.primaryBtnText}>{t ? "حفظ الاسم" : "Save Name"}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <TouchableOpacity 
+          style={[styles.menuRow, isDark && styles.darkMenuRow, { marginTop: 15 }]} 
           onPress={() => setExpandedSection(expandedSection === 'pass' ? null : 'pass')}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -97,7 +188,6 @@ export default function AccountInfoScreen({ navigation, user, setUser, lang, isD
           {expandedSection === 'pass' ? <ChevronDown color="#888" /> : <ChevronRight color="#888" />}
         </TouchableOpacity>
        
-        {/* Password change fields */}
         {expandedSection === 'pass' && (
           <View style={[styles.expandedBox, isDark && { backgroundColor: '#1A1A1A' }]}>
             <TextInput 
@@ -126,65 +216,6 @@ export default function AccountInfoScreen({ navigation, user, setUser, lang, isD
               onPress={() => handleUpdate('pass')}
             >
               <Text style={styles.primaryBtnText}>{t ? "حفظ كلمة السر" : "Save Password"}</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Phone number section row */}
-        <TouchableOpacity 
-          style={[styles.menuRow, isDark && styles.darkMenuRow, { marginTop: 15 }]} 
-          onPress={() => setExpandedSection(expandedSection === 'phone' ? null : 'phone')}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Phone color="#2D8C46" size={20} />
-            <Text style={[styles.menuLabel, { marginLeft: 10 }, isDark && { color: '#fff' }]}>
-              {t ? 'إضافة رقم هاتف للحماية' : 'Add Recovery Phone'}
-            </Text>
-          </View>
-          {expandedSection === 'phone' ? <ChevronDown color="#888" /> : <ChevronRight color="#888" />}
-        </TouchableOpacity>
-
-        {/* Phone number fields and countries list */}
-        {expandedSection === 'phone' && (
-          <View style={[styles.expandedBox, isDark && { backgroundColor: '#1A1A1A' }]}>
-            <TouchableOpacity 
-              style={[styles.input, isDark && styles.darkInput, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]} 
-              onPress={() => setShowCountryPicker(!showCountryPicker)}
-            >
-              <Text style={{ color: isDark ? '#fff' : '#000' }}>{selectedCountry.name}</Text>
-              <ChevronDown color="#2D8C46" size={18} />
-            </TouchableOpacity>
-
-            {showCountryPicker && (
-              <View style={[styles.pickerDropdown, isDark && { backgroundColor: '#222' }]}>
-                {allCountries.map(c => (
-                  <TouchableOpacity 
-                    key={c.name} 
-                    style={styles.pickerItem} 
-                    onPress={() => { setSelectedCountry(c); setShowCountryPicker(false); }}
-                  >
-                    <Text style={{ color: isDark ? '#fff' : '#000' }}>{c.name} ({c.code})</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-
-            <View style={{ flexDirection: 'row', marginTop: 10 }}>
-              <View style={[styles.input, isDark && styles.darkInput, { width: 80, marginRight: 10, justifyContent: 'center', alignItems: 'center' }]}>
-                <Text style={{ color: '#2D8C46', fontWeight: 'bold' }}>{selectedCountry.code}</Text>
-              </View>
-              <TextInput 
-                style={[styles.input, isDark && styles.darkInput, { flex: 1 }]} 
-                placeholder="7XXXXXXXX" 
-                keyboardType="phone-pad" 
-                value={phone} 
-                onChangeText={setPhone} 
-                placeholderTextColor="#888" 
-              />
-            </View>
-
-            <TouchableOpacity style={styles.primaryBtn} onPress={() => handleUpdate('phone')}>
-              <Text style={styles.primaryBtnText}>{t ? 'حفظ الرقم' : 'Save Number'}</Text>
             </TouchableOpacity>
           </View>
         )}

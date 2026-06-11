@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { 
-  View, Text, TextInput, TouchableOpacity, SafeAreaView, ScrollView, Alert, ActivityIndicator, StyleSheet 
+  View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, StyleSheet 
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, LockKeyhole } from 'lucide-react-native';
 import auth from '@react-native-firebase/auth';
 
@@ -31,21 +32,21 @@ export default function ForgotPassScreen({ navigation, lang, isDark }) {
     <SafeAreaView style={[styles.container, isDark && { backgroundColor: '#121212' }]}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         
-        {/* البطاقة المركزية */}
+        {/* Central Card */}
         <View style={[styles.card, isDark && { backgroundColor: '#1E1E1E' }]}>
           
           <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
             <ArrowLeft color={isDark ? '#fff' : '#000'} size={24} />
           </TouchableOpacity>
 
-          {/* أيقونة القفل */}
+          {/* Lock Icon */}
           <View style={[styles.iconBox, isDark && { backgroundColor: '#1C3524' }]}>
             <LockKeyhole color="#2D8C46" size={35} />
           </View>
 
           <Text style={[styles.title, isDark && { color: '#fff' }]}>Forgot Password</Text>
 
-          {/* حقل الإيميل */}
+          {/* Email Field */}
           <Text style={[styles.label, isDark && { color: '#ccc' }]}>EMAIL ADDRESS</Text>
           <TextInput 
             style={[styles.input, isDark && { backgroundColor: '#333', color: '#fff' }]} 

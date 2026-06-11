@@ -9,7 +9,7 @@ import shutil
 
 # Import the search function from our model
 from model.ai_search import search_recipes
-from model.gemini_helper import modify_recipe_with_gemini, guide_recipe_with_gemini, transcribe_audio_with_gemini, chat_with_gemini
+from model.gemini_helper import modify_recipe_with_gemini, guide_recipe_with_gemini, transcribe_audio_with_gemini, chat_with_gemini, translate_ingredients_to_arabic
 
 app = FastAPI(
     title="Arabic AI Cooking Assistant API",
@@ -141,14 +141,16 @@ def search_and_guide(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
-@app.post("/chat", response_model=ChatResponse, tags=["AI Features"])
+@app.post("/chat", tags=["AI Features"])
 def chat_endpoint(request: ChatRequest):
     """
     Intelligent conversational endpoint that maintains context and queries the DB when needed.
     """
     try:
-        response_text = chat_with_gemini(request.message, request.history)
-        return {"response": response_text}
+        result = chat_with_gemini(request.message, request.history)
+        if isinstance(result, str):
+            return {"type": "text", "response": result}
+        return result # Returns the JSON dict from Gemini
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
@@ -174,21 +176,29 @@ async def transcribe_audio(audio: UploadFile = File(...)):
             whisper_model = whisper.load_model("base")
             print("Whisper model loaded!")
             
-        # Set ffmpeg path for pydub
-        AudioSegment.converter = imageio_ffmpeg.get_ffmpeg_exe()
+        # Set ffmpeg path
+        ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
 
         # Create a temporary file to save the uploaded audio (.m4a from frontend)
         with tempfile.NamedTemporaryFile(delete=False, suffix=".m4a") as temp_file:
             shutil.copyfileobj(audio.file, temp_file)
             temp_file_path = temp_file.name
             
-        # Load audio with pydub and convert to 16kHz mono (required by Whisper)
-        sound = AudioSegment.from_file(temp_file_path)
-        sound = sound.set_frame_rate(16000).set_channels(1)
-        
-        # Convert audio to float32 numpy array
-        samples = np.array(sound.get_array_of_samples())
-        samples = samples.astype(np.float32) / 32768.0
+        # Convert audio to 16kHz mono using ffmpeg directly (bypasses pydub & ffprobe)
+        import subprocess
+        cmd = [
+            ffmpeg_exe,
+            "-nostdin",
+            "-threads", "0",
+            "-i", temp_file_path,
+            "-f", "s16le",
+            "-ac", "1",
+            "-acodec", "pcm_s16le",
+            "-ar", "16000",
+            "-"
+        ]
+        out = subprocess.run(cmd, capture_output=True, check=True).stdout
+        samples = np.frombuffer(out, np.int16).flatten().astype(np.float32) / 32768.0
         
         # Transcribe using Whisper, enforcing Arabic language
         result = whisper_model.transcribe(samples, language="ar")
@@ -207,6 +217,55 @@ async def transcribe_audio(audio: UploadFile = File(...)):
                 os.remove(temp_file_path)
             except:
                 pass            
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+
+# Global cache for YOLO model
+yolo_model = None
+
+@app.post("/detect_food", tags=["AI Features"])
+async def detect_food(image: UploadFile = File(...)):
+    """
+    Receives an image from the frontend, runs YOLOv8 food detection,
+    translates the detected labels to Arabic using Gemini, and returns them.
+    """
+    global yolo_model
+    try:
+        from ultralytics import YOLO
+        import cv2
+        import numpy as np
+        
+        # Lazy load the YOLO model
+        if yolo_model is None:
+            print("Loading YOLO model...")
+            weights_path = os.path.join(os.path.dirname(__file__), "model", "best.pt")
+            yolo_model = YOLO(weights_path)
+            print("YOLO model loaded!")
+            
+        contents = await image.read()
+        nparr = np.frombuffer(contents, np.uint8)
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        
+        if img is None:
+            raise HTTPException(status_code=400, detail="Invalid image")
+            
+        results = yolo_model(img, conf=0.2, verbose=False)
+        detected = set()
+        for result in results:
+            for box in result.boxes:
+                name = yolo_model.names[int(box.cls[0])]
+                detected.add(name)
+                
+        detected_list = list(detected)
+        
+        # Translate to Arabic if items were found
+        arabic_items = []
+        if detected_list:
+            arabic_items = translate_ingredients_to_arabic(detected_list)
+            
+        return {"detected_items": arabic_items}
+        
+    except Exception as e:
+        print(f"Detection error: {e}")
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 # If you want to run the server directly from this script:

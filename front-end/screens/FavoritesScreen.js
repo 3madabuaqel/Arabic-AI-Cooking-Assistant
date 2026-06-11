@@ -1,47 +1,20 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { 
-  View, Text, ScrollView, StyleSheet, SafeAreaView, TouchableOpacity, Image 
+  View, Text, ScrollView, StyleSheet, TouchableOpacity, Image 
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Star, Trash2 } from 'lucide-react-native';
 
-export default function FavoritesScreen({ route, navigation, isDark }) {
-  const initialFavorites = route?.params?.favorites || [
-    {
-      id: '1',
-      title: 'Avocado & Arugula Z...',
-      time: '15 mins',
-      category: 'Healthy',
-      image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?q=80&w=200&auto=format&fit=crop',
-    },
-    {
-      id: '2',
-      title: 'Dark Cocoa Lava Clo...',
-      time: '45 mins',
-      category: 'Dessert',
-      image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?q=80&w=200&auto=format&fit=crop',
-    },
-    {
-      id: '3',
-      title: 'Hand-Crushed Basil ...',
-      time: '20 mins',
-      category: 'Italian',
-      image: 'https://images.unsplash.com/photo-1546549032-9571cd6b27df?q=80&w=200&auto=format&fit=crop',
-    },
-    {
-      id: '4',
-      title: 'Crispy Skin Citrus Sa...',
-      time: '25 mins',
-      category: 'High Protein',
-      image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?q=80&w=200&auto=format&fit=crop',
-    }
-  ];
-
-  const [favorites, setFavorites] = useState(initialFavorites);
-
-  // دالة لحذف الأكلة من المفضلة عند الضغط على سلة المهملات
+export default function FavoritesScreen({ navigation, isDark, favorites, setFavorites }) {
+  
+  // Function to remove meal from favorites on trash click
   const handleRemove = (id) => {
-    setFavorites((prev) => prev.filter(item => item.id !== id));
+    if (setFavorites) {
+      setFavorites((prev) => prev.filter(item => item.id !== id));
+    }
   };
+
+  const currentFavorites = favorites || [];
 
   return (
     <SafeAreaView style={[styles.container, isDark && { backgroundColor: '#121212' }]}>
@@ -61,12 +34,12 @@ export default function FavoritesScreen({ route, navigation, isDark }) {
 
       {/* قائمة الأكلات المفضلة */}
       <ScrollView contentContainerStyle={styles.listContainer} showsVerticalScrollIndicator={false}>
-        {favorites.length === 0 ? (
+        {currentFavorites.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={[styles.emptyText, isDark && { color: '#666' }]}>No favorites added yet.</Text>
           </View>
         ) : (
-          favorites.map((item) => (
+          currentFavorites.map((item) => (
             <View key={item.id} style={[styles.recipeCard, isDark && { backgroundColor: '#1E1E1E' }]}>
               
               {/* صورة الأكلة */}
@@ -81,7 +54,7 @@ export default function FavoritesScreen({ route, navigation, isDark }) {
                   {item.title}
                 </Text>
                 <Text style={styles.recipeSub}>
-                  {item.time} • {item.category}
+                  {item.time || '15 mins'} • {item.category || 'Healthy'}
                 </Text>
               </View>
 
@@ -121,7 +94,7 @@ const styles = StyleSheet.create({
     padding: 15, 
     marginBottom: 15, 
     alignItems: 'center',
-    // تأثير الظل الخفيف المحيط بالبطاقة كما في الصورة
+    // Light shadow effect surrounding the card like in the image
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,

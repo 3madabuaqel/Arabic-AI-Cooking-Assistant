@@ -51,5 +51,5 @@ back-end/model/chroma_db/
 # Python cache
 __pycache__/
 *.pyc
-venv/
+.venv/
 .env

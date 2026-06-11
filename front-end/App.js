@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import auth from '@react-native-firebase/auth';
-// استيراد الشاشات
+
+// Import screens
+
 import ChatScreen from './screens/ChatScreen';
 import LoginScreen from './screens/LoginScreen';
 import SettingsScreen from './screens/SettingsScreen';
@@ -29,16 +32,47 @@ export default function App() {
   profileImage: null,
 });
 
-const isDark = themeMode === 'dark';
+const systemColorScheme = useColorScheme();
+const isDark = themeMode === 'system' ? systemColorScheme === 'dark' : themeMode === 'dark';
 
-// في ملف App.js
+const updateFavorites = (newFavoritesOrUpdater) => {
+  setFavorites((prev) => {
+    const updated = typeof newFavoritesOrUpdater === 'function' ? newFavoritesOrUpdater(prev) : newFavoritesOrUpdater;
+    if (user.isLoggedIn && user.email) {
+      AsyncStorage.setItem(`@favorites_${user.email}`, JSON.stringify(updated)).catch(e => console.log(e));
+    }
+    return updated;
+  });
+};
+
+useEffect(() => {
+  if (user.isLoggedIn && user.email) {
+    AsyncStorage.getItem(`@favorites_${user.email}`).then(stored => {
+      if (stored) {
+        setFavorites(JSON.parse(stored));
+      } else {
+        setFavorites([]);
+      }
+    }).catch(e => console.log('Error loading favorites:', e));
+  } else {
+    setFavorites([]);
+  }
+}, [user.isLoggedIn, user.email]);
+
+// In App.js
 useEffect(() => {
   const unsubscribe = auth().onAuthStateChanged((firebaseUser) => {
     if (firebaseUser) {
-      // المستخدم مسجل دخول بالفعل في Firebase
-      setUser(prev => ({ ...prev, isLoggedIn: true, name: firebaseUser.email }));
+      // User is already logged in to Firebase
+      setUser(prev => ({ 
+        ...prev, 
+        isLoggedIn: true, 
+        email: firebaseUser.email, 
+        name: prev.name && prev.name !== 'Sara' ? prev.name : (firebaseUser.displayName || firebaseUser.email?.split('@')[0]),
+        profileImage: firebaseUser.photoURL || prev.profileImage
+      }));
     } else {
-      // لا يوجد مستخدم
+      // No user
       setUser(prev => ({ ...prev, isLoggedIn: false }));
     }
   });
@@ -84,6 +118,9 @@ const loadUserData = async () => {
                 {...props}
                 lang={lang}
                 isDark={isDark}
+                user={user}
+                favorites={favorites}
+                setFavorites={updateFavorites}
               />
             )}
           </Stack.Screen>
@@ -130,6 +167,8 @@ const loadUserData = async () => {
             )}
           </Stack.Screen>
 
+
+
           {/* شاشة إنشاء حساب */}
           <Stack.Screen name="SignUp">
             {(props) => (
@@ -164,13 +203,15 @@ const loadUserData = async () => {
             )}
           </Stack.Screen>
 
+
+
           {/* شاشة المفضلة */}
           <Stack.Screen name="Favorites">
             {(props) => (
               <FavoritesScreen
                 {...props}
                 favorites={favorites}
-                setFavorites={setFavorites}
+                setFavorites={updateFavorites}
                 lang={lang}
                 isDark={isDark}
               />
