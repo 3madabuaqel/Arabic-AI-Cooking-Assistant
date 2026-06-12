@@ -6,7 +6,18 @@ from sentence_transformers import SentenceTransformer
 
 
 #  AUTHENTICATION & CONFIGURATION
-# os.environ["HF_TOKEN"] = "hf_your_token_here"
+try:
+    from dotenv import load_dotenv
+    # Explicitly specify the .env file path to ensure it is always read
+    env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
+    load_dotenv(dotenv_path=env_path)
+except ImportError:
+    pass
+
+# Verify that the token was loaded successfully
+hf_token = os.environ.get("HF_TOKEN")
+if hf_token:
+    os.environ["HF_TOKEN"] = hf_token
 
 
 # Instruction for the model to understand the nature of the data (specific to Instruct models)
