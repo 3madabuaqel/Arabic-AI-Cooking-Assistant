@@ -42,3 +42,20 @@ npm install
 npx expo start
 ```
 Expo will give you options to run the application on an emulator (Android/iOS) or on your physical device.
+
+### Testing on a Physical Device (Network IP Setup)
+If you want to run the application on your physical phone (using Expo Go) rather than an emulator, the mobile app needs to know your computer's local IP address to connect to the FastAPI Back-End.
+
+**1. Find your computer's local IP address:**
+- **Windows:** Open Command Prompt (CMD) and type `ipconfig`. Look for the `IPv4 Address` under your active Wi-Fi connection (usually starts with `192.168.`).
+- **Mac/Linux:** Open Terminal and type `ifconfig` or `ip a` and look for your `en0` or `wlan0` IP address.
+
+**2. Update the IP in the Front-End:**
+Once you have your IP address, open the following file:
+`front-end/screens/ChatScreen.js`
+
+Find this line near the top (around line 22):
+```javascript
+const API_URL = 'http://192.168.100.28:8000';
+```
+Change `192.168.100.28` to match the IP address you found in Step 1. Save the file and reload your Expo server.

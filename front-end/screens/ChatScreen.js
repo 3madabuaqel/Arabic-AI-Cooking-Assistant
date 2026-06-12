@@ -124,11 +124,19 @@ export default function ChatScreen({ navigation, lang, isDark, user, favorites, 
               id: Date.now() + 2,
               type: 'recipes',
               sender: 'bot',
-              recipes: data.recipes.map(r => ({ 
-                ...r, 
-                isFavorite: false,
-                image: r.image && r.image.startsWith('images/') ? `${API_URL}/${r.image}` : (r.image || 'https://via.placeholder.com/300')
-              }))
+              recipes: data.recipes.map(r => {
+                let imgPath = r.image || 'https://via.placeholder.com/300';
+                if (imgPath && !imgPath.startsWith('http')) {
+                  if (imgPath.startsWith('/')) imgPath = imgPath.slice(1);
+                  if (!imgPath.startsWith('images/')) imgPath = 'images/' + imgPath;
+                  imgPath = `${API_URL}/${imgPath}`;
+                }
+                return { 
+                  ...r, 
+                  isFavorite: false,
+                  image: imgPath
+                };
+              })
             });
           }
           return [...prev, ...newMessages];
@@ -154,11 +162,19 @@ export default function ChatScreen({ navigation, lang, isDark, user, favorites, 
               id: Date.now() + 2,
               type: 'recipes',
               sender: 'bot',
-              recipes: cardBlock.recipes.map(r => ({ 
-                ...r, 
-                isFavorite: false,
-                image: r.image && r.image.startsWith('images/') ? `${API_URL}/${r.image}` : (r.image || 'https://via.placeholder.com/300')
-              }))
+              recipes: cardBlock.recipes.map(r => {
+                let imgPath = r.image || 'https://via.placeholder.com/300';
+                if (imgPath && !imgPath.startsWith('http')) {
+                  if (imgPath.startsWith('/')) imgPath = imgPath.slice(1);
+                  if (!imgPath.startsWith('images/')) imgPath = 'images/' + imgPath;
+                  imgPath = `${API_URL}/${imgPath}`;
+                }
+                return { 
+                  ...r, 
+                  isFavorite: false,
+                  image: imgPath
+                };
+              })
             });
           }
           
@@ -440,7 +456,7 @@ export default function ChatScreen({ navigation, lang, isDark, user, favorites, 
                     isDark={isDark} 
                     t={t}
                     onToggleFavorite={(recipeId) => handleToggleRecipeFavorite(msg.id, recipeId)} 
-                    onPressRecipe={(recipe) => handleSend(t ? `أريد البدء بتحضير وصفة: ${recipe.title}` : `I want to start cooking recipe: ${recipe.title}`)}
+                    onPressRecipe={(recipe) => handleSend(t ? `جار تجهيز ${recipe.title}` : `Preparing ${recipe.title}`)}
                   />
                 );
               }
@@ -478,6 +494,16 @@ export default function ChatScreen({ navigation, lang, isDark, user, favorites, 
                                   </View>
                                 ))}
                               </View>
+                            );
+                          } else if (block.type === 'action') {
+                            return (
+                              <TouchableOpacity 
+                                key={index} 
+                                style={{ backgroundColor: '#2D8C46', paddingVertical: 10, paddingHorizontal: 24, borderRadius: 20, marginTop: 12, marginBottom: 8, alignSelf: 'center' }}
+                                onPress={() => handleSend(block.actionText)}
+                              >
+                                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 14 }}>{block.label}</Text>
+                              </TouchableOpacity>
                             );
                           } else {
                             return <Text key={index} style={{ color: isDark ? '#ddd' : '#333', marginBottom: 8, lineHeight: 20, textAlign: 'right', writingDirection: 'rtl' }}>{block.text}</Text>;

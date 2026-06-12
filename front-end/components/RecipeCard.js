@@ -16,35 +16,55 @@ export default function RecipeCard({ recipe, isDark, t, onToggleFavorite, onPres
     isFavorite,
   } = recipe;
 
+  const isAIGenerated = searchMethod && searchMethod.includes('الذكاء');
+
   return (
     <View style={[styles.card, isDark ? styles.cardDark : styles.cardLight]}>
-      {/* Recipe Image */}
-      <View style={styles.imageContainer}>
-        <Image source={{ uri: image }} style={styles.image} />
-        
-        {/* Search Method Badge */}
-        {searchMethod && (
-          <View style={styles.methodBadge}>
-            <Search size={12} color="#fff" style={{ marginRight: 4 }} />
-            <Text style={styles.methodText}>{searchMethod}</Text>
-          </View>
-        )}
+      {/* Recipe Image (Only for DB Recipes) */}
+      {!isAIGenerated && (
+        <View style={styles.imageContainer}>
+          <Image source={{ uri: image }} style={styles.image} />
+          
+          {/* Search Method Badge */}
+          {searchMethod && (
+            <View style={styles.methodBadge}>
+              <Search size={12} color="#fff" style={{ marginRight: 4 }} />
+              <Text style={styles.methodText}>{searchMethod}</Text>
+            </View>
+          )}
 
-        {/* Favorite Button Overlay */}
-        <TouchableOpacity style={styles.favoriteBtn} onPress={onToggleFavorite}>
-          <Star 
-            size={20} 
-            color={isFavorite ? "#FFD700" : "#fff"} 
-            fill={isFavorite ? "#FFD700" : "rgba(0,0,0,0.3)"} 
-          />
-        </TouchableOpacity>
-      </View>
+          {/* Favorite Button Overlay */}
+          <TouchableOpacity style={styles.favoriteBtn} onPress={onToggleFavorite}>
+            <Star 
+              size={20} 
+              color={isFavorite ? "#FFD700" : "#fff"} 
+              fill={isFavorite ? "#FFD700" : "rgba(0,0,0,0.3)"} 
+            />
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Content */}
       <View style={styles.content}>
-        <Text style={[styles.title, isDark && { color: '#fff' }]} numberOfLines={1}>
-          {title}
-        </Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 8 }}>
+            <Text style={[styles.title, isDark && { color: '#fff' }, { marginBottom: 0 }]} numberOfLines={2}>
+              {title}
+            </Text>
+            {isAIGenerated && (
+              <Text style={{ fontSize: 10, color: '#999', marginLeft: 6, fontStyle: 'italic' }}>Ai✨</Text>
+            )}
+          </View>
+          {isAIGenerated && (
+            <TouchableOpacity onPress={onToggleFavorite} style={{ padding: 4 }}>
+              <Star 
+                size={20} 
+                color={isFavorite ? "#FFD700" : (isDark ? "#888" : "#ccc")} 
+                fill={isFavorite ? "#FFD700" : "transparent"} 
+              />
+            </TouchableOpacity>
+          )}
+        </View>
 
         {/* Meta Tags */}
         <View style={styles.metaRow}>

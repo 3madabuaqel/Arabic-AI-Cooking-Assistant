@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import { ArrowLeft, Star, Settings, Camera, RotateCcw, Smartphone, ChevronDown, LogOut, Bell, Moon, Sun, Monitor } from 'lucide-react-native';
+import { ArrowLeft, Star, Settings, Camera, RotateCcw, Smartphone, ChevronDown, LogOut, Bell, Moon, Sun, Monitor, Globe } from 'lucide-react-native';
 import auth from '@react-native-firebase/auth';
 const allCountries = [
   { name: "Jordan", code: "+962" },
@@ -42,7 +42,7 @@ const allCountries = [
   { name: "Canada", code: "+1" },
   { name: "Switzerland", code: "+41" }
 ];
-const SettingsScreen = ({ navigation, lang, isDark, user, setUser, themeMode, setThemeMode }) => {
+const SettingsScreen = ({ navigation, lang, setLang, isDark, user, setUser, themeMode, setThemeMode }) => {
   const t = lang === 'ar';
   // These states are empty and automatically change based on the logged-in user
   const [userName, setUserName] = useState('');
@@ -120,6 +120,20 @@ const SettingsScreen = ({ navigation, lang, isDark, user, setUser, themeMode, se
     }
   };
 
+  const handleResetPassword = async () => {
+    try {
+      const firebaseUser = auth().currentUser;
+      if (firebaseUser && firebaseUser.email) {
+        await auth().sendPasswordResetEmail(firebaseUser.email);
+        Alert.alert(t ? 'نجاح' : 'Success', t ? 'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.' : 'Password reset link sent to your email.');
+      } else {
+        Alert.alert(t ? 'خطأ' : 'Error', t ? 'لم نتمكن من العثور على بريدك الإلكتروني.' : 'Could not find your email address.');
+      }
+    } catch (error) {
+      Alert.alert(t ? 'خطأ' : 'Error', error.message);
+    }
+  };
+
   return (
     <SafeAreaView style={[styles.container, isDark && { backgroundColor: '#121212' }]}><ScrollView>
       {/* Header */}
@@ -171,8 +185,8 @@ const SettingsScreen = ({ navigation, lang, isDark, user, setUser, themeMode, se
         <>
           <Text style={[styles.sectionTitle, isDark && { color: '#888' }]}>ACCOUNT SECURITY</Text>
 
-          <TouchableOpacity style={[styles.card, isDark && { backgroundColor: '#1E1E1E' }]}>
-            <Text style={[styles.cardText, isDark && { color: '#FFF' }]}>Reset Password</Text>
+          <TouchableOpacity style={[styles.card, isDark && { backgroundColor: '#1E1E1E' }]} onPress={handleResetPassword}>
+            <Text style={[styles.cardText, isDark && { color: '#FFF' }]}>{t ? 'إعادة تعيين كلمة المرور' : 'Reset Password'}</Text>
             <RotateCcw size={22} color="#0F8B4C" />
           </TouchableOpacity>
 
@@ -191,9 +205,17 @@ const SettingsScreen = ({ navigation, lang, isDark, user, setUser, themeMode, se
         {!user?.isGuest && (
           <TouchableOpacity style={[styles.prefCard, isDark && { backgroundColor: '#1E1E1E' }]}>
             <Bell size={24} color="#0F8B4C" />
-            <Text style={[styles.prefText, isDark && { color: '#FFF' }]}>Notifications</Text>
+            <Text style={[styles.prefText, isDark && { color: '#FFF' }]}>{t ? 'الإشعارات' : 'Notifications'}</Text>
           </TouchableOpacity>
         )}
+        <TouchableOpacity style={[styles.prefCard, isDark && { backgroundColor: '#1E1E1E' }]} onPress={() => {
+          setLang(lang === 'ar' ? 'en' : 'ar');
+        }}>
+          <Globe size={24} color="#0F8B4C" />
+          <Text style={[styles.prefText, isDark && { color: '#FFF' }]}>
+            {lang === 'ar' ? 'العربية' : 'English'}
+          </Text>
+        </TouchableOpacity>
         <TouchableOpacity style={[styles.prefCard, isDark && { backgroundColor: '#1E1E1E' }]} onPress={() => {
           if (themeMode === 'light') setThemeMode('dark');
           else if (themeMode === 'dark') setThemeMode('system');
@@ -270,8 +292,8 @@ const styles = StyleSheet.create({
   logoutCard: { backgroundColor: '#FFF5F5', marginHorizontal: 20, marginTop: 12, padding: 20, borderRadius: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   logoutText: { fontSize: 16, fontWeight: '600', color: '#E53935' },
   preferencesRow: { flexDirection: 'row', justifyContent: 'space-between', marginHorizontal: 20, marginTop: 12, marginBottom: 40 },
-  prefCard: { width: '47%', backgroundColor: '#FFF', borderRadius: 16, padding: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 1 },
-  prefText: { marginTop: 12, fontSize: 15, fontWeight: '600', color: '#111' },
+  prefCard: { width: '31%', backgroundColor: '#FFF', borderRadius: 16, padding: 15, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 1 },
+  prefText: { marginTop: 12, fontSize: 13, fontWeight: '600', color: '#111', textAlign: 'center' },
 
   // Modal styles (countries popup)
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },

@@ -9,7 +9,7 @@ import shutil
 
 # Import the search function from our model
 from model.ai_search import search_recipes
-from model.gemini_helper import modify_recipe_with_gemini, guide_recipe_with_gemini, transcribe_audio_with_gemini, chat_with_gemini, translate_ingredients_to_arabic
+from model.gemini_helper import modify_recipe_with_gemini, guide_recipe_with_gemini, transcribe_audio_with_gemini, chat_with_gemini, translate_ingredients_to_arabic, identify_dish_from_image
 
 app = FastAPI(
     title="Arabic AI Cooking Assistant API",
@@ -266,6 +266,58 @@ async def detect_food(image: UploadFile = File(...)):
         
     except Exception as e:
         print(f"Detection error: {e}")
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+
+@app.post("/identify_recipe", tags=["AI Features"])
+async def identify_recipe(image: UploadFile = File(...)):
+    """
+    Receives an image and identifies the recipe.
+    1. Runs YOLO to detect items.
+    2. Sends the image (and detected items as hints) to Gemini Vision to identify the dish.
+    """
+    global yolo_model
+    try:
+        from ultralytics import YOLO
+        import cv2
+        import numpy as np
+        
+        # 1. Run YOLO
+        if yolo_model is None:
+            weights_path = os.path.join(os.path.dirname(__file__), "model", "best.pt")
+            yolo_model = YOLO(weights_path)
+            
+        contents = await image.read()
+        nparr = np.frombuffer(contents, np.uint8)
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        
+        if img is None:
+            raise HTTPException(status_code=400, detail="Invalid image")
+            
+        results = yolo_model(img, conf=0.2, verbose=False)
+        detected = set()
+        for result in results:
+            for box in result.boxes:
+                name = yolo_model.names[int(box.cls[0])]
+                detected.add(name)
+                
+        detected_list = list(detected)
+        
+        # 2. Translate items to Arabic for hints
+        arabic_hints = []
+        if detected_list:
+            arabic_hints = translate_ingredients_to_arabic(detected_list)
+            
+        # 3. Use Gemini Vision to identify the recipe using the image bytes and YOLO hints
+        recipe_name = identify_dish_from_image(contents, arabic_hints)
+        
+        return {
+            "recipe_name": recipe_name,
+            "detected_ingredients": arabic_hints,
+            "source": "gemini"
+        }
+        
+    except Exception as e:
+        print(f"Identify Recipe error: {e}")
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 # If you want to run the server directly from this script:

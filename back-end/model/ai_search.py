@@ -217,9 +217,11 @@ def search_recipes(query, mode="auto", top_k=5):
     
     query_embedding = model.encode(query_with_prefix, normalize_embeddings=True).tolist() 
     
+    fetch_k = top_k * 3 if mode in ["overview", "ingredients"] else top_k
+    
     results = collection.query(
         query_embeddings=[query_embedding],
-        n_results=top_k,
+        n_results=fetch_k,
         where={"type": mode},
         include=["documents", "metadatas", "distances"]
     )
@@ -248,6 +250,11 @@ def search_recipes(query, mode="auto", top_k=5):
             "relevance_score": 1 - dist  
         }
         formatted_recipes.append(recipe_obj)
+        
+    if mode in ["overview", "ingredients"] and len(formatted_recipes) > top_k:
+        import random
+        # Sort slightly to keep top relevance but still shuffle
+        formatted_recipes = random.sample(formatted_recipes, top_k)
         
     return formatted_recipes
 

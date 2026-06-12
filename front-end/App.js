@@ -20,7 +20,7 @@ import FavoritesScreen from './screens/FavoritesScreen';
 const Stack = createNativeStackNavigator();
 
 export default function App() {
-  const [lang, setLang] = useState('en');
+  const [lang, setLang] = useState('ar');
   const [themeMode, setThemeMode] = useState('light');
   const [favorites, setFavorites] = useState([]);
  const [user, setUser] = useState({
