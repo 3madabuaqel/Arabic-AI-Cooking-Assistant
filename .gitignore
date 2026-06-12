@@ -41,7 +41,7 @@ yarn-error.*
 /android
 
 
-back-end/model/
+back-end/__pycache__/
 back-end/data/
 back-end/model/chroma_db/
 
