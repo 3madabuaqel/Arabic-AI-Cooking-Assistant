@@ -12,6 +12,9 @@ except ImportError:
 
 api_key = os.environ.get("GEMINI_API_KEY")
 
+model_main = "gemini-2.5-flash"
+model_vision = "gemini-2.5-flash-image"
+
 client = None
 if api_key:
     client = genai.Client(api_key=api_key)
@@ -49,7 +52,7 @@ def modify_recipe_with_gemini(recipe_data: Dict[str, Any], user_instruction: str
     
     try:
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model=model_main,
             contents=prompt
         )
         return response.text
@@ -77,83 +80,15 @@ def guide_recipe_with_gemini(recipe_data: Dict[str, Any]) -> str:
     
     try:
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model=model_main,
             contents=prompt
         )
         return response.text
     except Exception as e:
         return f"حدث خطأ أثناء الاتصال بـ Gemini API: {str(e)}"
 
-def transcribe_audio_with_gemini(file_path: str) -> str:
-    """
-    Uploads an audio file to Gemini and asks it to transcribe the Arabic speech to text.
-    """
-    if not client:
-        return ""
-        
-    try:
-        # Upload the file to the Gemini API
-        audio_file = client.files.upload(file=file_path)
-        
-        prompt = "قم بتفريغ (transcribe) هذا الملف الصوتي باللغة العربية. اكتب النص الذي تسمعه فقط، بدون أي إضافات وبدقة عالية."
-        
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=[prompt, audio_file]
-        )
-        
-        # Clean up the file from Google's servers
-        try:
-            client.files.delete(name=audio_file.name)
-        except Exception:
-            pass
-            
-        return response.text.strip()
-    except Exception as e:
-        print(f"Error in transcribe_audio_with_gemini: {e}")
-        return ""
 
-def translate_ingredients_to_arabic(ingredients_list: list) -> list:
-    """
-    Translates a list of English ingredient names into Arabic using Gemini.
-    """
-    if not client:
-        return ingredients_list
-        
-    if not ingredients_list:
-        return []
-        
-    prompt = f"""
-    أنت خبير في الترجمة. قم بترجمة المكونات الغذائية التالية من الإنجليزية إلى العربية بدقة وبمصطلحات الطبخ المتعارف عليها.
-    يجب أن ترجع مصفوفة بتنسيق JSON فقط تحتوي على المكونات المترجمة.
-    
-    المكونات بالإنجليزية:
-    {ingredients_list}
-    
-    النتيجة المطلوبة:
-    ["ترجمة_1", "ترجمة_2"]
-    لا تقم بإضافة أي نصوص أخرى أو مقدمات.
-    """
-    
-    try:
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt
-        )
-        text = response.text.strip()
-        if text.startswith("```json"):
-            text = text.replace("```json", "").replace("```", "").strip()
-        import json
-        try:
-            parsed = json.loads(text)
-            if isinstance(parsed, list):
-                return parsed
-        except json.JSONDecodeError:
-            pass
-        return ingredients_list
-    except Exception as e:
-        print(f"Error in translate_ingredients: {e}")
-        return ingredients_list
+
 
 def chat_with_gemini(message: str, history: list) -> str:
     """
@@ -222,7 +157,7 @@ def chat_with_gemini(message: str, history: list) -> str:
             formatted_history.append(types.Content(role=role, parts=[types.Part.from_text(text=h.text)]))
             
         chat = client.chats.create(
-            model="gemini-2.5-flash",
+            model=model_main,
             history=formatted_history
         )
         
@@ -268,32 +203,27 @@ def chat_with_gemini(message: str, history: list) -> str:
    ```
    - لا تضف أي نص خارج الـ JSON في هذه الحالة!
 
-2. إذا اختار المستخدم إحدى الوصفات (طلب تحضيرها أو البدء بطبخها) أو كان يتابع الطبخ معك (مثل قوله: تم، اوكي، جاهز):
-   - أنت الآن في "وضع الطبخ التفاعلي". لا تعطه كل الخطوات دفعة واحدة أبداً!
-   - يجب أن يكون ردك بصيغة JSON حصراً بهذا الهيكل لكي يعرضه التطبيق بشكل صناديق جميلة:
+2. إذا اختار المستخدم إحدى الوصفات أو طلب تفاصيلها (مثل المكونات أو طريقة التحضير):
+   - لا تسأله خطوة بخطوة أبداً، ولا تستخدم زر "كمل". أعطه المعلومات كاملة بناءً على ما طلبه.
+   - يجب أن يكون ردك بصيغة JSON حصراً بهذا الهيكل لكي يعرضه التطبيق بشكل صناديق وأزرار تفاعلية:
    ```json
    {{
      "type": "rich_text",
      "blocks": [
-       {{ "type": "highlight_box", "color": "red", "text": "اختيار ممتاز! لنبدأ التحضير." }},
-       {{ "type": "header", "text": "المكونات التي سنحتاجها:" }},
-       {{ "type": "list", "items": ["عنصر 1", "عنصر 2"] }},
-       {{ "type": "text", "text": "أخبرني عندما تنتهي من التجهيز لنبدأ بالخطوة الأولى." }},
-       {{ "type": "action", "label": "جاهز! أعطني الخطوة الأولى", "actionText": "كمل" }}
+       {{ "type": "expandable", "title": "المكونات", "items": ["🍅 2 حبة طماطم", "🧅 1 حبة بصل"] }},
+       {{ "type": "expandable", "title": "طريقة التحضير", "items": ["1️⃣ **الخطوة الأولى:** قم بتقطيع البصل...", "2️⃣ **الخطوة الثانية:** أضف الزيت..."] }},
+       {{ "type": "expandable", "title": "القيمة الغذائية والفوائد الصحية", "items": ["🔥 **السعرات الحرارية:** ...", "🥩 **البروتين:** ...", "💡 **فوائد الطبخة:** (اشرح هنا فائدة صحية سريعة)", "⚠️ **تحذير الحساسية:** (اذكر إذا كانت تحتوي على مسببات حساسية مثل المكسرات، الحليب، الجلوتين، البيض، الخ)"] }},
+       {{ "type": "show_card", "title": "اسم الطبخة هنا" }}
      ]
    }}
    ```
-   - استخدم `highlight_box` للتشجيع أو التنبيه (الألوان المتاحة: red, green, blue).
-   - استخدم `header` للعناوين البارزة.
-   - استخدم `list` لسرد المكونات أو الخطوات المتعددة.
-   - استخدم `action` لإضافة زر للمستخدم (مثلاً لكي ينتقل للخطوة التالية بدون كتابة). يجب أن يحتوي على `label` (النص الظاهر على الزر مثل "كمل الخطوة التالية") و `actionText` (النص المخفي الذي سيُرسل مثل "كمل").
-   - في نهاية كل خطوة (ما لم تكن الأخيرة)، أضف دائماً هذا الزر لكي يضغط عليه المستخدم. مثال: `{{ "type": "action", "label": "كمل الخطوة التالية", "actionText": "كمل" }}`
-   - استخدم `text` للكلام العادي والأسئلة.
-   - أعد صياغة خطوات التحضير الموجودة في السياق بأسلوبك الخاص لتبدو أسهل وأرتب، ولا تقم بنسخها حرفياً. حافظ على أسلوب احترافي ومباشر بدون مبالغة أو تصنع (لا تستخدم كلمات مثل "يا بطل" أو "يا شاطر").
-   - لا تستخدم أي نجوم ** للخط العريض في النصوص داخل الـ JSON.
-   - أول رسالة: أعطه المكونات فقط واسأله إذا كان جاهزاً.
-   - الرسائل التالية: أعطه خطوة بخطوة باستخدام نفس هيكل الـ JSON.
-   - **عند الانتهاء من جميع خطوات الطبخ:** بارك للمستخدم، واسأله إذا كان يود حفظ الوصفة في المفضلة، ثم أضف صندوقاً جديداً في المصفوفة من نوع `show_card` مع عنوان الوصفة كما يلي: `{{ "type": "show_card", "title": "اسم الطبخة هنا" }}`.
+   - أعطه **كل المعلومات دفعة واحدة** موزعة داخل صناديق `expandable` لتكون قابلة للفتح والإغلاق.
+   - يجب أن تستخدم مصفوفة `items` لوضع الخطوات والمكونات بشكل منفصل بدلاً من نص واحد طويل، لكي يتم عرضها بشكل قائمة مرتبة وجميلة.
+   - استخدم الإيموجي (Emojis) في بداية كل عنصر في الـ `items` لجعله أجمل.
+   - **هام جداً للتنسيق:** استخدم النجمتين `**` لجعل العناوين الفرعية بخط عريض (Bold)، خاصة في طريقة التحضير (مثلاً: `**الخطوة الأولى:** شرح الخطوة هنا`). هذا سيفصل بين اسم الخطوة وشرحها بوضوح.
+   - **هام في القيمة الغذائية:** لا تكتفِ بالسعرات فقط! أضف دائماً شرحاً للفوائد الصحية، ونصائح، وتحذيراً واضحاً لمسببات الحساسية إن وجدت.
+   - لا تستخدم أزرار `action` بعد الآن.
+   - أضف دائماً `show_card` في النهاية لكي تظل بطاقة الوصفة ظاهرة أمامه.
 
 3. إذا سأل المستخدم أسئلة عامة عن الطبخة أو طلب لمسة مبتكرة أو إضافة مميزة:
    - **هام جداً:** اقرأ طلب المستخدم بعناية شديدة، وخذ بعين الاعتبار أي مكونات، تفضيلات، أو قيود يذكرها، وخصص اقتراحك المبتكر بناءً عليها بالكامل.
@@ -331,9 +261,13 @@ def chat_with_gemini(message: str, history: list) -> str:
                 else:
                     raise api_err
         
-        # Try to parse as JSON if it looks like it
-        if response_text.startswith("```json"):
-            response_text = response_text.replace("```json", "").replace("```", "").strip()
+        # Aggressively extract JSON from response using regex
+        import re
+        json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', response_text, re.DOTALL | re.IGNORECASE)
+        if json_match:
+            response_text = json_match.group(1).strip()
+        else:
+            response_text = response_text.strip()
             
         if response_text.startswith("{") and response_text.endswith("}"):
             import json
@@ -385,7 +319,7 @@ def identify_dish_from_image(image_bytes: bytes, detected_items: list = None) ->
         """
         
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model=model_vision,
             contents=[
                 types.Part.from_bytes(data=image_bytes, mime_type='image/jpeg'),
                 prompt
@@ -395,3 +329,71 @@ def identify_dish_from_image(image_bytes: bytes, detected_items: list = None) ->
     except Exception as e:
         print(f"Error in identify_dish_from_image: {e}")
         return "غير معروف"
+
+def fallback_detect_image_with_gemini(image_bytes: bytes) -> list:
+    """
+    Fallback function for when YOLO detects nothing.
+    Uses Gemini Vision to identify if it's a dish or ingredients.
+    Returns a list of strings (either ['Dish Name'] or ['Ingredient 1', 'Ingredient 2']).
+    """
+    if not client:
+        return []
+        
+    try:
+        from google.genai import types
+        
+        prompt = """
+        أنت شيف عربي خبير ومحلل صور. انظر إلى هذه الصورة بدقة.
+        إذا كانت الصورة لطبخة جاهزة ومطبوخة، أرجع مصفوفة JSON تحتوي على اسم الطبخة فقط كعنصر واحد. (مثال: ["مقلوبة دجاج"]).
+        أما إذا كانت الصورة لمكونات خام (مثل طماطم، بيض، بطاطا)، فأرجع مصفوفة JSON تحتوي على أسماء هذه المكونات باللغة العربية. (مثال: ["طماطم", "بيض", "بطاطا"]).
+        الشرط الوحيد: يجب أن يكون الرد عبارة عن مصفوفة JSON صالحة فقط، بدون أي نصوص أو شروحات إضافية.
+        """
+        
+        response = client.models.generate_content(
+            model=model_vision,
+            contents=[
+                types.Part.from_bytes(data=image_bytes, mime_type='image/jpeg'),
+                prompt
+            ]
+        )
+        text = response.text.strip()
+        if text.startswith("```json"):
+            text = text.replace("```json", "").replace("```", "").strip()
+        
+        import json
+        try:
+            parsed = json.loads(text)
+            if isinstance(parsed, list):
+                return parsed
+        except json.JSONDecodeError:
+            pass
+            
+        return []
+    except Exception as e:
+        print(f"Error in fallback_detect_image_with_gemini: {e}")
+        return []
+
+def transcribe_audio_with_gemini(audio_bytes: bytes, mime_type: str = 'audio/mp4') -> str:
+    """
+    Uses Gemini to transcribe Arabic audio directly from bytes.
+    This replaces the need for local Whisper and FFmpeg.
+    """
+    if not client:
+        return ""
+        
+    try:
+        from google.genai import types
+        
+        prompt = "استمع إلى هذا المقطع الصوتي واكتب ما يقال فيه باللغة العربية بدقة. أرجع النص المكتوب فقط بدون أي إضافات."
+        
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=[
+                types.Part.from_bytes(data=audio_bytes, mime_type=mime_type),
+                prompt
+            ]
+        )
+        return response.text.strip()
+    except Exception as e:
+        print(f"Error in transcribe_audio_with_gemini: {e}")
+        return ""

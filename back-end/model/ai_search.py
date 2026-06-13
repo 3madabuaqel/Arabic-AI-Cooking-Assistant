@@ -1,9 +1,11 @@
 import os
 import json
 import re
-import chromadb
-from sentence_transformers import SentenceTransformer
+import warnings
 
+# Suppress HuggingFace Hub unauthenticated warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="huggingface_hub.*")
+os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
 
 #  AUTHENTICATION & CONFIGURATION
 try:
@@ -17,14 +19,17 @@ except ImportError:
 # Verify that the token was loaded successfully
 hf_token = os.environ.get("HF_TOKEN")
 if hf_token:
-    os.environ["HF_TOKEN"] = hf_token
+    hf_token = hf_token.strip()
 
+import chromadb
+from sentence_transformers import SentenceTransformer
 
 # Instruction for the model to understand the nature of the data (specific to Instruct models)
 TASK_INSTRUCTION = "Given an Arabic food recipe search query, retrieve relevant recipes or ingredients."
 
 
 #  SETUP MODEL & DATABASE
+hf_token_val = os.environ.get("HF_TOKEN")
 model = SentenceTransformer("intfloat/multilingual-e5-large")
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -190,7 +195,7 @@ def run_pipeline(jsonl_path, batch_size=200):
 # UNIFIED SEARCH API
 def detect_search_mode(query: str) -> str:
     ingredients_keywords = ["عندي", "بثلاجتي", "في الثلاجة", "مكونات", "ومكونات", "بدي اطبخ ب", "شو اطبخ ب"]
-    title_keywords = ["طريقة عمل", "وصفة", "كيف اسوي", "كيف اطبخ", "بدي", "اريد", "كيف اعمل"]
+    title_keywords = ["طريقة عمل", "وصفة", "كيف اسوي", "كيف اطبخ", "بدي", "اريد", "كيف اعمل", "جار تجهيز", "preparing", "ابدا الطبخ", "بدء الطبخ"]
     overview_keywords = ["صحي", "سريع", "نباتي", "بدون", "دايت", "للرجيم", "صوص", "مقبلات", "شوربة", "حلى", "حلا", "حلويات", "فطور", "غداء", "عشاء", "اكل", "بروتين", "خفيف", "وجبة"]
     
     query_lower = query.lower()

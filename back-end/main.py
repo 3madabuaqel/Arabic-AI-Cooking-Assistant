@@ -1,3 +1,12 @@
+import os
+from dotenv import load_dotenv
+load_dotenv(override=True)
+
+# Suppress HuggingFace Hub unauthenticated warnings globally
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="huggingface_hub.*")
+os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
+
 from fastapi import FastAPI, Query, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -9,7 +18,7 @@ import shutil
 
 # Import the search function from our model
 from model.ai_search import search_recipes
-from model.gemini_helper import modify_recipe_with_gemini, guide_recipe_with_gemini, transcribe_audio_with_gemini, chat_with_gemini, translate_ingredients_to_arabic, identify_dish_from_image
+from model.gemini_helper import modify_recipe_with_gemini, guide_recipe_with_gemini, chat_with_gemini, identify_dish_from_image
 
 app = FastAPI(
     title="Arabic AI Cooking Assistant API",
@@ -154,69 +163,27 @@ def chat_endpoint(request: ChatRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
-# Global cache for Whisper model
-whisper_model = None
-
 @app.post("/transcribe", tags=["AI Features"])
 async def transcribe_audio(audio: UploadFile = File(...)):
     """
-    Receives an audio file from the frontend, saves it temporarily, and uses local Whisper AI to transcribe it.
+    Receives an audio file from the frontend and uses Gemini 2.5 Flash to transcribe it natively.
     """
-    global whisper_model
     try:
-        import whisper
-        import numpy as np
-        from pydub import AudioSegment
-        import imageio_ffmpeg
-        import os
+        from model.gemini_helper import transcribe_audio_with_gemini
         
-        # Lazy load the model on first use (base model is small and fast)
-        if whisper_model is None:
-            print("Loading local Whisper model (base)...")
-            whisper_model = whisper.load_model("base")
-            print("Whisper model loaded!")
+        # Read the audio bytes
+        audio_bytes = await audio.read()
+        
+        # Transcribe using Gemini directly
+        text = transcribe_audio_with_gemini(audio_bytes, mime_type=audio.content_type or 'audio/mp4')
+        
+        if not text:
+            raise Exception("Failed to transcribe audio")
             
-        # Set ffmpeg path
-        ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
-
-        # Create a temporary file to save the uploaded audio (.m4a from frontend)
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".m4a") as temp_file:
-            shutil.copyfileobj(audio.file, temp_file)
-            temp_file_path = temp_file.name
-            
-        # Convert audio to 16kHz mono using ffmpeg directly (bypasses pydub & ffprobe)
-        import subprocess
-        cmd = [
-            ffmpeg_exe,
-            "-nostdin",
-            "-threads", "0",
-            "-i", temp_file_path,
-            "-f", "s16le",
-            "-ac", "1",
-            "-acodec", "pcm_s16le",
-            "-ar", "16000",
-            "-"
-        ]
-        out = subprocess.run(cmd, capture_output=True, check=True).stdout
-        samples = np.frombuffer(out, np.int16).flatten().astype(np.float32) / 32768.0
-        
-        # Transcribe using Whisper, enforcing Arabic language
-        result = whisper_model.transcribe(samples, language="ar")
-        text = result["text"].strip()
-        
-        # Clean up local temp file
-        os.remove(temp_file_path)
-        
         return {"text": text}
         
     except Exception as e:
         print(f"Transcription error: {e}")
-        # Clean up in case of error
-        if 'temp_file_path' in locals() and os.path.exists(temp_file_path):
-            try:
-                os.remove(temp_file_path)
-            except:
-                pass            
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 # Global cache for YOLO model
@@ -226,7 +193,7 @@ yolo_model = None
 async def detect_food(image: UploadFile = File(...)):
     """
     Receives an image from the frontend, runs YOLOv8 food detection,
-    translates the detected labels to Arabic using Gemini, and returns them.
+    translates the detected labels to Arabic locally, and returns them.
     """
     global yolo_model
     try:
@@ -257,10 +224,26 @@ async def detect_food(image: UploadFile = File(...)):
                 
         detected_list = list(detected)
         
-        # Translate to Arabic if items were found
+        # Translate to Arabic locally
         arabic_items = []
         if detected_list:
-            arabic_items = translate_ingredients_to_arabic(detected_list)
+            FOOD_TRANSLATIONS = {
+                "banana": "موز", "bell pepper": "فليفلة", "bulgur": "برغل", "cabbage": "ملفوف",
+                "carrot": "جزر", "cheese": "جبنة", "chicken": "دجاج", "chickpeas": "حمص",
+                "cucumber": "خيار", "egg": "بيض", "eggplant": "باذنجان", "farfalle pasta": "معكرونة فراشات",
+                "fusilli pasta": "معكرونة لولبية", "garlic": "ثوم", "green pepper": "فلفل أخضر",
+                "ground meat": "لحم مفروم", "ketchup": "كاتشب", "lemon": "ليمون", "margarine": "سمن نباتي",
+                "mayonnaise": "مايونيز", "milk": "حليب", "mushroom": "فطر", "olive": "زيتون",
+                "olive oil": "زيت زيتون", "onion": "بصل", "parsley": "بقدونس", "potato": "بطاطا",
+                "red lentils": "عدس أحمر", "rice": "أرز", "sausage": "سجق", "spaghetti": "سباغيتي",
+                "tomato": "طماطم", "tomato paste": "معجون طماطم", "turkish dumplings": "شيش برك",
+                "yogurt": "زبادي", "zucchini": "كوسا"
+            }
+            arabic_items = [FOOD_TRANSLATIONS.get(item.lower(), item) for item in detected_list]
+        else:
+            # Fallback to Gemini Vision if YOLO detects nothing
+            from model.gemini_helper import fallback_detect_image_with_gemini
+            arabic_items = fallback_detect_image_with_gemini(contents)
             
         return {"detected_items": arabic_items}
         

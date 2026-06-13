@@ -12,6 +12,7 @@ import {
   Platform,
   Keyboard,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Star, Settings, Camera, Mic, ArrowUp, User } from 'lucide-react-native';
@@ -20,6 +21,72 @@ import { Audio } from 'expo-av';
 import RecipeCarousel from '../components/RecipeCarousel';
 
 const API_URL = 'http://192.168.100.28:8000'; // Updated to your real Wi-Fi IP for physical device testing
+
+const renderFormattedText = (text, isDark) => {
+  if (!text || typeof text !== 'string') return text;
+  const parts = text.split(/(\*\*.*?\*\*)/g);
+  return parts.map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <Text key={index} style={{ fontWeight: '900', fontSize: 16, color: isDark ? '#fff' : '#000' }}>{part.replace(/\*\*/g, '')}</Text>;
+    }
+    return <Text key={index}>{part}</Text>;
+  });
+};
+
+const ExpandableBlock = ({ block, isDark }) => {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <View style={{ marginBottom: 10 }}>
+      <TouchableOpacity 
+        style={{ backgroundColor: isDark ? '#1C4A26' : '#E8F5E9', padding: 12, borderRadius: 8, flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: '#2D8C46' }} 
+        onPress={() => setExpanded(!expanded)}
+      >
+        <Text style={{ color: isDark ? '#A5D6A7' : '#2D8C46', fontWeight: 'bold', fontSize: 16 }}>{block.title}</Text>
+        <Text style={{ color: isDark ? '#A5D6A7' : '#2D8C46', fontWeight: 'bold', fontSize: 18 }}>{expanded ? '▲' : '▼'}</Text>
+      </TouchableOpacity>
+      {expanded && (
+        <View style={{ padding: 12, backgroundColor: isDark ? '#2A2A2A' : '#F5F5F5', borderBottomLeftRadius: 8, borderBottomRightRadius: 8, marginTop: -4, borderWidth: 1, borderTopWidth: 0, borderColor: '#2D8C46' }}>
+           {block.items ? (
+             block.items.map((item, i) => (
+               <View key={i} style={{ flexDirection: 'row-reverse', alignItems: 'flex-start', marginBottom: 12, backgroundColor: isDark ? '#333' : '#fff', padding: 12, borderRadius: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 1 }}>
+                 <Text style={{ color: isDark ? '#4CAF50' : '#2D8C46', marginLeft: 10, fontWeight: 'bold', fontSize: 18, marginTop: 2 }}>•</Text>
+                 <Text style={{ color: isDark ? '#ddd' : '#333', flex: 1, textAlign: 'right', writingDirection: 'rtl', lineHeight: 26, fontSize: 15 }}>{renderFormattedText(item, isDark)}</Text>
+               </View>
+             ))
+           ) : (
+             <Text style={{ color: isDark ? '#ddd' : '#333', textAlign: 'right', writingDirection: 'rtl', lineHeight: 26, fontSize: 15 }}>{renderFormattedText(block.text, isDark)}</Text>
+           )}
+        </View>
+      )}
+    </View>
+  );
+};
+
+const SimpleFavoriteCard = ({ recipe, geminiBlocks, isDark, favorites, setFavorites }) => {
+  const isFav = favorites?.some(f => f.id === recipe.id);
+  
+  const toggleFavorite = () => {
+    if (!setFavorites) return;
+    if (isFav) {
+      setFavorites(prev => prev.filter(f => f.id !== recipe.id));
+    } else {
+      setFavorites(prev => [...prev, { ...recipe, geminiBlocks }]);
+    }
+  };
+
+  return (
+    <View style={{ flexDirection: 'row-reverse', alignItems: 'center', backgroundColor: isDark ? '#1C4A26' : '#E8F5E9', padding: 12, borderRadius: 12, marginTop: 10, borderWidth: 1, borderColor: '#2D8C46' }}>
+      <Image source={{ uri: recipe.image }} style={{ width: 40, height: 40, borderRadius: 20, marginLeft: 12 }} />
+      <View style={{ flex: 1 }}>
+        <Text style={{ color: isDark ? '#fff' : '#000', fontWeight: 'bold', fontSize: 16, textAlign: 'right', writingDirection: 'rtl' }}>{recipe.title}</Text>
+        <Text style={{ color: isDark ? '#A5D6A7' : '#2D8C46', fontSize: 12, textAlign: 'right', writingDirection: 'rtl' }}>أضف للمفضلة للاحتفاظ بالتفاصيل</Text>
+      </View>
+      <TouchableOpacity onPress={toggleFavorite} style={{ padding: 8 }}>
+        <Star color={isFav ? '#FFD700' : '#2D8C46'} fill={isFav ? '#FFD700' : 'transparent'} size={26} />
+      </TouchableOpacity>
+    </View>
+  );
+};
 
 export default function ChatScreen({ navigation, lang, isDark, user, favorites, setFavorites }) {
   const [messages, setMessages] = useState([]);
@@ -33,6 +100,22 @@ export default function ChatScreen({ navigation, lang, isDark, user, favorites, 
   const t = lang === 'ar';
   const insets = useSafeAreaInsets();
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  
+  const fadeAnim = useRef(new Animated.Value(0.3)).current;
+
+  useEffect(() => {
+    if (isTyping) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+          Animated.timing(fadeAnim, { toValue: 0.3, duration: 600, useNativeDriver: true })
+        ])
+      ).start();
+    } else {
+      fadeAnim.stopAnimation();
+      fadeAnim.setValue(0.3);
+    }
+  }, [isTyping, fadeAnim]);
 
   React.useEffect(() => {
     if (Platform.OS === 'ios') return;
@@ -145,38 +228,29 @@ export default function ChatScreen({ navigation, lang, isDark, user, favorites, 
         setMessages((prev) => {
           const newMessages = [];
           
-          const textBlocks = data.blocks.filter(b => b.type !== 'show_card');
-          const cardBlock = data.blocks.find(b => b.type === 'show_card');
-          
-          if (textBlocks.length > 0) {
-            newMessages.push({
-              id: Date.now() + 1,
-              type: 'rich_text',
-              blocks: textBlocks,
-              sender: 'bot',
-            });
-          }
-          
-          if (cardBlock && cardBlock.recipes && cardBlock.recipes.length > 0) {
-            newMessages.push({
-              id: Date.now() + 2,
-              type: 'recipes',
-              sender: 'bot',
-              recipes: cardBlock.recipes.map(r => {
+          // Format image URLs for recipes inside show_card if it exists
+          const formattedBlocks = data.blocks.map(b => {
+            if (b.type === 'show_card' && b.recipes && b.recipes.length > 0) {
+              const formattedRecipes = b.recipes.map(r => {
                 let imgPath = r.image || 'https://via.placeholder.com/300';
                 if (imgPath && !imgPath.startsWith('http')) {
                   if (imgPath.startsWith('/')) imgPath = imgPath.slice(1);
                   if (!imgPath.startsWith('images/')) imgPath = 'images/' + imgPath;
                   imgPath = `${API_URL}/${imgPath}`;
                 }
-                return { 
-                  ...r, 
-                  isFavorite: false,
-                  image: imgPath
-                };
-              })
-            });
-          }
+                return { ...r, isFavorite: false, image: imgPath };
+              });
+              return { ...b, recipes: formattedRecipes };
+            }
+            return b;
+          });
+          
+          newMessages.push({
+            id: Date.now() + 1,
+            type: 'rich_text',
+            blocks: formattedBlocks,
+            sender: 'bot',
+          });
           
           return [...prev, ...newMessages];
         });
@@ -495,6 +569,8 @@ export default function ChatScreen({ navigation, lang, isDark, user, favorites, 
                                 ))}
                               </View>
                             );
+                          } else if (block.type === 'expandable') {
+                            return <ExpandableBlock key={index} block={block} isDark={isDark} />;
                           } else if (block.type === 'action') {
                             return (
                               <TouchableOpacity 
@@ -505,6 +581,10 @@ export default function ChatScreen({ navigation, lang, isDark, user, favorites, 
                                 <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 14 }}>{block.label}</Text>
                               </TouchableOpacity>
                             );
+                          } else if (block.type === 'show_card' && block.recipes && block.recipes.length > 0) {
+                            return <SimpleFavoriteCard key={index} recipe={block.recipes[0]} geminiBlocks={msg.blocks} isDark={isDark} favorites={favorites} setFavorites={setFavorites} />;
+                          } else if (block.type === 'show_card') {
+                            return null;
                           } else {
                             return <Text key={index} style={{ color: isDark ? '#ddd' : '#333', marginBottom: 8, lineHeight: 20, textAlign: 'right', writingDirection: 'rtl' }}>{block.text}</Text>;
                           }
@@ -523,9 +603,9 @@ export default function ChatScreen({ navigation, lang, isDark, user, favorites, 
             })}
             {isTyping && (
               <View style={[styles.messageBubble, styles.botBubble(isDark), { alignSelf: 'flex-start' }]}>
-                <Text style={{ color: isDark ? '#fff' : '#000', fontStyle: 'italic' }}>
-                  {t ? 'المساعد يكتب...' : 'Assistant is typing...'}
-                </Text>
+                <Animated.Text style={{ color: isDark ? '#fff' : '#000', fontStyle: 'italic', opacity: fadeAnim }}>
+                  {t ? 'يكتب...' : 'Typing...'}
+                </Animated.Text>
               </View>
             )}
           </ScrollView>
