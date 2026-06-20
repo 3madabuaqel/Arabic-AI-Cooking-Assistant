@@ -20,7 +20,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Audio } from 'expo-av';
 import RecipeCarousel from '../components/RecipeCarousel';
 
-const API_URL = 'http://192.168.100.28:8000'; // Updated to your real Wi-Fi IP for physical device testing
+const API_URL = 'http://192.168.56.133:8000'; // Updated to your real Wi-Fi IP for physical device testing
 
 const renderFormattedText = (text, isDark) => {
   if (!text || typeof text !== 'string') return text;
@@ -63,14 +63,15 @@ const ExpandableBlock = ({ block, isDark }) => {
 };
 
 const SimpleFavoriteCard = ({ recipe, geminiBlocks, isDark, favorites, setFavorites }) => {
-  const isFav = favorites?.some(f => f.id === recipe.id);
+  const recipeId = recipe.id || recipe.recipe_id || String(Date.now());
+  const isFav = recipeId && favorites?.some(f => f.id === recipeId);
   
   const toggleFavorite = () => {
     if (!setFavorites) return;
     if (isFav) {
-      setFavorites(prev => prev.filter(f => f.id !== recipe.id));
+      setFavorites(prev => prev.filter(f => f.id !== recipeId));
     } else {
-      setFavorites(prev => [...prev, { ...recipe, geminiBlocks }]);
+      setFavorites(prev => [...prev, { ...recipe, id: recipeId, geminiBlocks }]);
     }
   };
 
@@ -507,7 +508,7 @@ export default function ChatScreen({ navigation, lang, isDark, user, favorites, 
         {messages.length === 0 ? (
           <View style={styles.chatBody}>
             <View style={[styles.aiSparkBox, isDark && { backgroundColor: '#1E1E1E' }]}>
-              <Image source={{ uri: 'https://cdn-icons-png.flaticon.com/512/10515/10515234.png' }} style={{ width: 40, height: 40 }} />
+              <Image source={require('../assets/logo.jpg')} style={{ width: 40, height: 40, borderRadius: 20 }} />
             </View>
             <Text style={[styles.aiWelcomeText, isDark && { color: '#aaa' }]}>
               {t ? 'أهلاً بك! أنا مساعدك الذكي الذي سيساعدك في الطهي اليوم 👨‍🍳' : "Welcome! I'm your smart assistant who will help you cook today"}

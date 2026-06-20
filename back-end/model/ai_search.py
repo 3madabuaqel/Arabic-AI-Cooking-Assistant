@@ -67,21 +67,12 @@ def get_ingredients_text(ingredients):
     for ing in ingredients:
         if isinstance(ing, dict):
             item = clean_ar(ing.get("item", ""))
-            if item: result.append(item)
+            if item:
+                result.append(item)
         elif isinstance(ing, str):
             result.append(clean_ar(ing))
     return " | ".join(result)
 
-def get_instructions_text(instructions):
-    result = []
-    for step in instructions:
-        if isinstance(step, dict):
-            text = clean_ar(step.get("text", ""))
-            if text: result.append(text)
-        elif isinstance(step, str):
-            text = clean_ar(step)
-            if text: result.append(text)
-    return " ".join(result)
 
 def format_ingredients_full(ingredients):
     result = []
@@ -204,7 +195,7 @@ def detect_search_mode(query: str) -> str:
         if kw in query_lower:
             return "ingredients"
             
-    if " و " in query_lower or " و" in query_lower or "," in query_lower or "،" in query_lower:
+    if " و " in query_lower or " و" in query_lower or "," in query_lower or "،" in query_lower or "\n-" in query_lower or query_lower.strip().startswith("-"):
         return "ingredients"
         
     for kw in overview_keywords:
@@ -253,7 +244,7 @@ def search_recipes(query, mode="auto", top_k=5):
     
     for doc, meta, dist in zip(docs, metas, dists):
         recipe_obj = {
-            "recipe_id": meta.get("recipe_id"),
+            "id": meta.get("recipe_id"),
             "title": meta.get("title"),
             "description": meta.get("description"),
             "image": meta.get("image"),

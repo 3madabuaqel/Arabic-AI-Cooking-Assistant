@@ -122,8 +122,9 @@ def chat_with_gemini(message: str, history: list) -> str:
                     break
                     
         new_recipe_keywords = ["ابحث", "وصفة جديدة", "طبخة ثانية", "بدي وصفة", "اعطيني وصفة"]
-        if is_cooking_session and any(kw in message.lower() for kw in new_recipe_keywords):
-            is_cooking_session = False
+        if is_cooking_session:
+            if any(kw in message.lower() for kw in new_recipe_keywords) or message.strip().startswith("-") or "\n-" in message:
+                is_cooking_session = False
 
         mode = "auto"
         retrieved_recipes = []
@@ -270,7 +271,6 @@ def chat_with_gemini(message: str, history: list) -> str:
             response_text = response_text.strip()
             
         if response_text.startswith("{") and response_text.endswith("}"):
-            import json
             try:
                 parsed = json.loads(response_text)
                 

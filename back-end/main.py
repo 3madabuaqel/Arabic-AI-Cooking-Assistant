@@ -12,9 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List, Optional
-import tempfile
 import os
-import shutil
 
 # Import the search function from our model
 from model.ai_search import search_recipes
@@ -189,6 +187,22 @@ async def transcribe_audio(audio: UploadFile = File(...)):
 # Global cache for YOLO model
 yolo_model = None
 
+FOOD_TRANSLATIONS = {
+    "banana": "موز", "bell pepper": "فليفلة", "bulgur": "برغل", "cabbage": "ملفوف",
+    "carrot": "جزر", "cheese": "جبنة", "chicken": "دجاج", "chickpeas": "حمص",
+    "cucumber": "خيار", "egg": "بيض", "eggplant": "باذنجان", "farfalle pasta": "معكرونة فراشات",
+    "fusilli pasta": "معكرونة لولبية", "garlic": "ثوم", "green pepper": "فلفل أخضر",
+    "ground meat": "لحم مفروم", "ketchup": "كاتشب", "lemon": "ليمون", "margarine": "سمن نباتي",
+    "mayonnaise": "مايونيز", "milk": "حليب", "mushroom": "فطر", "olive": "زيتون",
+    "olive oil": "زيت زيتون", "onion": "بصل", "parsley": "بقدونس", "potato": "بطاطا",
+    "red lentils": "عدس أحمر", "rice": "أرز", "sausage": "سجق", "spaghetti": "سباغيتي",
+    "tomato": "طماطم", "tomato paste": "معجون طماطم", "turkish dumplings": "شيش برك",
+    "yogurt": "زبادي", "zucchini": "كوسا"
+}
+
+def translate_ingredients_to_arabic(items: List[str]) -> List[str]:
+    return [FOOD_TRANSLATIONS.get(item.lower(), item) for item in items]
+
 @app.post("/detect_food", tags=["AI Features"])
 async def detect_food(image: UploadFile = File(...)):
     """
@@ -215,7 +229,7 @@ async def detect_food(image: UploadFile = File(...)):
         if img is None:
             raise HTTPException(status_code=400, detail="Invalid image")
             
-        results = yolo_model(img, conf=0.2, verbose=False)
+        results = yolo_model(img, conf=0.2, imgsz=1024, verbose=False)
         detected = set()
         for result in results:
             for box in result.boxes:
@@ -227,19 +241,7 @@ async def detect_food(image: UploadFile = File(...)):
         # Translate to Arabic locally
         arabic_items = []
         if detected_list:
-            FOOD_TRANSLATIONS = {
-                "banana": "موز", "bell pepper": "فليفلة", "bulgur": "برغل", "cabbage": "ملفوف",
-                "carrot": "جزر", "cheese": "جبنة", "chicken": "دجاج", "chickpeas": "حمص",
-                "cucumber": "خيار", "egg": "بيض", "eggplant": "باذنجان", "farfalle pasta": "معكرونة فراشات",
-                "fusilli pasta": "معكرونة لولبية", "garlic": "ثوم", "green pepper": "فلفل أخضر",
-                "ground meat": "لحم مفروم", "ketchup": "كاتشب", "lemon": "ليمون", "margarine": "سمن نباتي",
-                "mayonnaise": "مايونيز", "milk": "حليب", "mushroom": "فطر", "olive": "زيتون",
-                "olive oil": "زيت زيتون", "onion": "بصل", "parsley": "بقدونس", "potato": "بطاطا",
-                "red lentils": "عدس أحمر", "rice": "أرز", "sausage": "سجق", "spaghetti": "سباغيتي",
-                "tomato": "طماطم", "tomato paste": "معجون طماطم", "turkish dumplings": "شيش برك",
-                "yogurt": "زبادي", "zucchini": "كوسا"
-            }
-            arabic_items = [FOOD_TRANSLATIONS.get(item.lower(), item) for item in detected_list]
+            arabic_items = translate_ingredients_to_arabic(detected_list)
         else:
             # Fallback to Gemini Vision if YOLO detects nothing
             from model.gemini_helper import fallback_detect_image_with_gemini
@@ -276,7 +278,7 @@ async def identify_recipe(image: UploadFile = File(...)):
         if img is None:
             raise HTTPException(status_code=400, detail="Invalid image")
             
-        results = yolo_model(img, conf=0.2, verbose=False)
+        results = yolo_model(img, conf=0.2, imgsz=1024, verbose=False)
         detected = set()
         for result in results:
             for box in result.boxes:
